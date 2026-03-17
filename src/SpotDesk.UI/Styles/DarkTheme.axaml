@@ -1,0 +1,38 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Override dynamic resources for Dark theme -->
+  <Style Selector=":is(Control)">
+    <Style.Resources>
+      <ResourceDictionary>
+        <ResourceDictionary.ThemeDictionaries>
+          <ResourceDictionary x:Key="Dark">
+            <Color x:Key="BgBase">#0F1117</Color>
+            <Color x:Key="BgSurface">#171B26</Color>
+            <Color x:Key="BgElevated">#1E2333</Color>
+            <Color x:Key="BgHover">#252A3D</Color>
+            <Color x:Key="BgActive">#2D3350</Color>
+            <Color x:Key="TextPrimary">#E8EAF0</Color>
+            <Color x:Key="TextSecondary">#9AA3B8</Color>
+            <Color x:Key="TextTertiary">#5A6478</Color>
+            <Color x:Key="BorderSubtle">#252A3D</Color>
+            <Color x:Key="BorderDefault">#2E3449</Color>
+          </ResourceDictionary>
+          <ResourceDictionary x:Key="Light">
+            <Color x:Key="BgBase">#F4F5F7</Color>
+            <Color x:Key="BgSurface">#FFFFFF</Color>
+            <Color x:Key="BgElevated">#FAFAFA</Color>
+            <Color x:Key="BgHover">#EEF0F4</Color>
+            <Color x:Key="BgActive">#E3E8F2</Color>
+            <Color x:Key="TextPrimary">#111827</Color>
+            <Color x:Key="TextSecondary">#4B5563</Color>
+            <Color x:Key="TextTertiary">#9CA3AF</Color>
+            <Color x:Key="BorderSubtle">#E5E7EB</Color>
+            <Color x:Key="BorderDefault">#D1D5DB</Color>
+          </ResourceDictionary>
+        </ResourceDictionary.ThemeDictionaries>
+      </ResourceDictionary>
+    </Style.Resources>
+  </Style>
+
+</Styles>

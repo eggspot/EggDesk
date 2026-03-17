@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Controls.SearchBox"
+             x:DataType="vm:SearchViewModel">
+
+  <!-- Full-window overlay backdrop -->
+  <Grid>
+    <!-- Dimmed backdrop — click to dismiss -->
+    <Border x:Name="Backdrop"
+            Background="#80000000"
+            IsHitTestVisible="True"/>
+
+    <!-- Search panel -->
+    <Border HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Margin="0,80,0,0"
+            Width="600"
+            Background="{DynamicResource BgElevatedBrush}"
+            CornerRadius="10"
+            BorderBrush="{DynamicResource BorderDefaultBrush}"
+            BorderThickness="1"
+            BoxShadow="0 8 32 0 #60000000">
+
+      <Grid RowDefinitions="56,Auto,Auto">
+
+        <!-- Input row -->
+        <Grid Grid.Row="0" ColumnDefinitions="20,*,Auto" Margin="16,0">
+          <TextBlock Grid.Column="0" Text="◉" FontSize="16"
+                     Foreground="{DynamicResource TextTertiaryBrush}"
+                     VerticalAlignment="Center"/>
+          <TextBox  Grid.Column="1"
+                    x:Name="SearchInput"
+                    Text="{Binding Query}"
+                    Watermark="Search connections, type IP to quick-connect…"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    FontSize="16"
+                    Foreground="{DynamicResource TextPrimaryBrush}"
+                    VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="2" Text="Esc" FontSize="11"
+                     FontFamily="{DynamicResource FontMono}"
+                     Foreground="{DynamicResource TextTertiaryBrush}"
+                     VerticalAlignment="Center"
+                     Margin="0,0,4,0"/>
+        </Grid>
+
+        <!-- Divider -->
+        <Border Grid.Row="1" Height="1"
+                Background="{DynamicResource BorderSubtleBrush}"
+                IsVisible="{Binding HasResults}"/>
+
+        <!-- Results list -->
+        <ScrollViewer Grid.Row="2"
+                      MaxHeight="360"
+                      IsVisible="{Binding HasResults}">
+          <ItemsControl ItemsSource="{Binding Results}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SearchResultItem">
+                <Border Padding="16,10"
+                        Background="Transparent"
+                        Cursor="Hand">
+                  <Border.Styles>
+                    <Style Selector="Border.selected">
+                      <Setter Property="Background" Value="{DynamicResource BgActiveBrush}"/>
+                    </Style>
+                    <Style Selector="Border:pointerover">
+                      <Setter Property="Background" Value="{DynamicResource BgHoverBrush}"/>
+                    </Style>
+                  </Border.Styles>
+                  <Grid ColumnDefinitions="8,*,Auto,60">
+                    <Ellipse Grid.Column="0" Width="6" Height="6"
+                             Fill="{Binding StatusColor, Converter={StaticResource ColorStringToBrushConverter}}"
+                             VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Margin="12,0">
+                      <TextBlock Text="{Binding Name}" FontSize="14"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"/>
+                      <TextBlock Text="{Binding Host}" FontSize="11"
+                                 Foreground="{DynamicResource TextTertiaryBrush}"
+                                 FontFamily="{DynamicResource FontMono}"/>
+                    </StackPanel>
+                    <Border Grid.Column="2" Classes="protocol-badge" Margin="0,0,8,0">
+                      <TextBlock Text="{Binding Protocol}" FontSize="11"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 FontFamily="{DynamicResource FontMono}"/>
+                    </Border>
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding GroupName}" FontSize="11"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Quick-connect hint when query looks like an IP -->
+        <Border Grid.Row="2" Padding="16,10"
+                IsVisible="{Binding ShowQuickConnectHint}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Quick connect to" FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBlock Text="{Binding Query}" FontSize="13" FontWeight="Medium"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontFamily="{DynamicResource FontMono}"/>
+            <TextBlock Text="— press Enter" FontSize="13"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+          </StackPanel>
+        </Border>
+
+      </Grid>
+    </Border>
+  </Grid>
+
+</UserControl>

@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ============================================================ -->
+  <!-- BACKGROUNDS — DARK                                           -->
+  <!-- ============================================================ -->
+  <Color x:Key="BgBase">#0F1117</Color>
+  <Color x:Key="BgSurface">#171B26</Color>
+  <Color x:Key="BgElevated">#1E2333</Color>
+  <Color x:Key="BgHover">#252A3D</Color>
+  <Color x:Key="BgActive">#2D3350</Color>
+
+  <!-- ============================================================ -->
+  <!-- BACKGROUNDS — LIGHT                                          -->
+  <!-- ============================================================ -->
+  <Color x:Key="BgBaseLight">#F4F5F7</Color>
+  <Color x:Key="BgSurfaceLight">#FFFFFF</Color>
+  <Color x:Key="BgElevatedLight">#FAFAFA</Color>
+  <Color x:Key="BgHoverLight">#EEF0F4</Color>
+  <Color x:Key="BgActiveLight">#E3E8F2</Color>
+
+  <!-- ============================================================ -->
+  <!-- ACCENT (Eggspot brand — clean teal-blue)                    -->
+  <!-- ============================================================ -->
+  <Color x:Key="AccentPrimary">#3B82F6</Color>
+  <Color x:Key="AccentSubtle">#1E3A5F</Color>
+  <Color x:Key="AccentText">#93C5FD</Color>
+
+  <!-- ============================================================ -->
+  <!-- STATUS                                                        -->
+  <!-- ============================================================ -->
+  <Color x:Key="StatusConnected">#22C55E</Color>
+  <Color x:Key="StatusConnecting">#F59E0B</Color>
+  <Color x:Key="StatusError">#EF4444</Color>
+  <Color x:Key="StatusIdle">#6B7280</Color>
+
+  <!-- ============================================================ -->
+  <!-- TEXT — DARK                                                   -->
+  <!-- ============================================================ -->
+  <Color x:Key="TextPrimary">#E8EAF0</Color>
+  <Color x:Key="TextSecondary">#9AA3B8</Color>
+  <Color x:Key="TextTertiary">#5A6478</Color>
+
+  <!-- ============================================================ -->
+  <!-- TEXT — LIGHT                                                  -->
+  <!-- ============================================================ -->
+  <Color x:Key="TextPrimaryLight">#111827</Color>
+  <Color x:Key="TextSecondaryLight">#4B5563</Color>
+  <Color x:Key="TextTertiaryLight">#9CA3AF</Color>
+
+  <!-- ============================================================ -->
+  <!-- BORDERS — DARK                                               -->
+  <!-- ============================================================ -->
+  <Color x:Key="BorderSubtle">#252A3D</Color>
+  <Color x:Key="BorderDefault">#2E3449</Color>
+
+  <!-- ============================================================ -->
+  <!-- BORDERS — LIGHT                                              -->
+  <!-- ============================================================ -->
+  <Color x:Key="BorderSubtleLight">#E5E7EB</Color>
+  <Color x:Key="BorderDefaultLight">#D1D5DB</Color>
+
+  <!-- ============================================================ -->
+  <!-- SOLID BRUSHES (DynamicResource — update on theme switch)     -->
+  <!-- ============================================================ -->
+  <SolidColorBrush x:Key="BgBaseBrush" Color="{DynamicResource BgBase}"/>
+  <SolidColorBrush x:Key="BgSurfaceBrush" Color="{DynamicResource BgSurface}"/>
+  <SolidColorBrush x:Key="BgElevatedBrush" Color="{DynamicResource BgElevated}"/>
+  <SolidColorBrush x:Key="BgHoverBrush" Color="{DynamicResource BgHover}"/>
+  <SolidColorBrush x:Key="BgActiveBrush" Color="{DynamicResource BgActive}"/>
+  <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
+  <SolidColorBrush x:Key="AccentTextBrush" Color="{DynamicResource AccentText}"/>
+  <SolidColorBrush x:Key="StatusConnectedBrush" Color="{DynamicResource StatusConnected}"/>
+  <SolidColorBrush x:Key="StatusConnectingBrush" Color="{DynamicResource StatusConnecting}"/>
+  <SolidColorBrush x:Key="StatusErrorBrush" Color="{DynamicResource StatusError}"/>
+  <SolidColorBrush x:Key="StatusIdleBrush" Color="{DynamicResource StatusIdle}"/>
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
+  <SolidColorBrush x:Key="TextTertiaryBrush" Color="{DynamicResource TextTertiary}"/>
+  <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource BorderSubtle}"/>
+  <SolidColorBrush x:Key="BorderDefaultBrush" Color="{DynamicResource BorderDefault}"/>
+
+</ResourceDictionary>

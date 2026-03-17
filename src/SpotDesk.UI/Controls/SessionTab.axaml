@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Controls.SessionTab"
+             x:DataType="vm:SessionTabViewModel">
+
+  <Border Padding="12,0" MinWidth="120" MaxWidth="200" Height="40"
+          BorderThickness="0,0,0,2"
+          Background="Transparent"
+          Cursor="Hand">
+
+    <Border.BorderBrush>
+      <MultiBinding Converter="{StaticResource ActiveTabBorderConverter}">
+        <Binding Path="IsActive"/>
+      </MultiBinding>
+    </Border.BorderBrush>
+
+    <Grid ColumnDefinitions="16,*,8,20">
+
+      <!-- Protocol icon -->
+      <Path Grid.Column="0" Data="{Binding ProtocolIcon}"
+            Fill="{DynamicResource TextSecondaryBrush}"
+            Width="14" Height="14"
+            VerticalAlignment="Center"
+            Stretch="Uniform"/>
+
+      <!-- Hostname -->
+      <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
+                 FontSize="13" VerticalAlignment="Center"
+                 Margin="6,0" TextTrimming="CharacterEllipsis"
+                 Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+      <!-- Status dot -->
+      <Ellipse Grid.Column="2" Width="6" Height="6"
+               Fill="{Binding StatusColor, Converter={StaticResource ColorStringToBrushConverter}}"
+               VerticalAlignment="Center"/>
+
+      <!-- Close -->
+      <Button Grid.Column="3" Content="✕" FontSize="11"
+              Command="{Binding CloseCommand}"
+              Classes="ghost-button"
+              Padding="4"
+              VerticalAlignment="Center"/>
+    </Grid>
+
+  </Border>
+
+</UserControl>

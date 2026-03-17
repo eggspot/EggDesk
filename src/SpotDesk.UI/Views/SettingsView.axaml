@@ -1,0 +1,243 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <Grid RowDefinitions="56,*">
+
+    <!-- Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource BgSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="24,0">
+      <TextBlock Text="Settings" FontSize="16" FontWeight="Medium"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 VerticalAlignment="Center"/>
+    </Border>
+
+    <!-- Tab host -->
+    <TabControl Grid.Row="1"
+                Background="{DynamicResource BgBaseBrush}">
+
+      <!-- ════ GENERAL ════ -->
+      <TabItem Header="General">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="24" MaxWidth="600">
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="Auto-sync interval"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+              <ComboBox SelectedItem="{Binding AutoSyncInterval}"
+                        Width="200">
+                <ComboBoxItem Content="1 min"/>
+                <ComboBoxItem Content="5 min"/>
+                <ComboBoxItem Content="15 min"/>
+                <ComboBoxItem Content="Manual only"/>
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="Lock on screen lock"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+              <ToggleSwitch IsChecked="{Binding LockOnScreenLock}"
+                            OnContent="Enabled" OffContent="Disabled"/>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ APPEARANCE ════ -->
+      <TabItem Header="Appearance">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="24" MaxWidth="600">
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="Theme"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <RadioButton Content="Dark"   GroupName="Theme"
+                             IsChecked="{Binding Theme, Converter={x:Static vm:AppThemeConverter.Dark}}"/>
+                <RadioButton Content="Light"  GroupName="Theme"
+                             IsChecked="{Binding Theme, Converter={x:Static vm:AppThemeConverter.Light}}"/>
+                <RadioButton Content="System" GroupName="Theme"
+                             IsChecked="{Binding Theme, Converter={x:Static vm:AppThemeConverter.System}}"/>
+              </StackPanel>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ VAULT & SYNC ════ -->
+      <TabItem Header="Vault &amp; Sync">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="24" MaxWidth="600">
+
+            <Border Background="{DynamicResource BgSurfaceBrush}"
+                    CornerRadius="8" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Encryption"
+                           FontSize="14" FontWeight="Medium"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{Binding EncryptionInfo}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontFamily="{DynamicResource FontMono}"/>
+              </StackPanel>
+            </Border>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="GitHub Sync"
+                         FontSize="14" FontWeight="Medium"
+                         Foreground="{DynamicResource TextPrimaryBrush}"/>
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          IsVisible="{Binding !IsGitHubConnected}">
+                <Button Classes="primary-button" Content="Connect GitHub"
+                        Command="{Binding ConnectGitHubCommand}"/>
+              </StackPanel>
+              <StackPanel Spacing="8" IsVisible="{Binding IsGitHubConnected}">
+                <TextBlock Text="{Binding GithubLogin, StringFormat='Logged in as {0}'}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                <TextBox Text="{Binding GitRemoteUrl}"
+                         Watermark="https://github.com/you/spotdesk-vault"
+                         Width="400"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary-button" Content="Sync Now"
+                          Command="{Binding SyncNowCommand}"/>
+                  <Button Content="Disconnect"
+                          Background="{DynamicResource BgElevatedBrush}"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          CornerRadius="6" Padding="16,8"
+                          Command="{Binding DisconnectGitHubCommand}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding LastSyncedAt, StringFormat='Last synced: {0:g}'}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           IsVisible="{Binding LastSyncedAt, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Text="Vault"
+                         FontSize="14" FontWeight="Medium"
+                         Foreground="{DynamicResource TextPrimaryBrush}"/>
+              <Button Content="Lock Vault Now"
+                      Background="{DynamicResource BgElevatedBrush}"
+                      Foreground="{DynamicResource TextPrimaryBrush}"
+                      CornerRadius="6" Padding="16,8"
+                      Command="{Binding LockVaultCommand}"/>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ TRUSTED DEVICES ════ -->
+      <TabItem Header="Trusted Devices">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="16" MaxWidth="600">
+            <TextBlock Text="Devices that can decrypt this vault"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <ItemsControl ItemsSource="{Binding TrustedDevices}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DeviceInfo">
+                  <Border Background="{DynamicResource BgSurfaceBrush}"
+                          CornerRadius="6" Padding="16,10" Margin="0,0,0,4">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding DeviceName}"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{Binding DeviceId}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   FontFamily="{DynamicResource FontMono}"/>
+                        <TextBlock Text="{Binding AddedAt, StringFormat='Added {0:d}'}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"/>
+                      </StackPanel>
+                      <Button Grid.Column="1"
+                              Content="Revoke"
+                              Classes="ghost-button"
+                              FontSize="12"
+                              IsEnabled="{Binding !IsCurrentDevice}"/>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ SSH KEYS ════ -->
+      <TabItem Header="SSH Keys">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="16" MaxWidth="600">
+            <TextBlock Text="Manage SSH key pairs stored in the vault"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <Button Classes="primary-button" Content="+ Import Key"/>
+            <Button Content="Generate New Key Pair"
+                    Background="{DynamicResource BgElevatedBrush}"
+                    Foreground="{DynamicResource TextPrimaryBrush}"
+                    CornerRadius="6" Padding="16,8"/>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ SHORTCUTS ════ -->
+      <TabItem Header="Shortcuts">
+        <ScrollViewer Padding="24">
+          <StackPanel Spacing="4" MaxWidth="600">
+            <Grid ColumnDefinitions="160,*" Margin="0,0,0,12">
+              <TextBlock Grid.Column="0" Text="Action"
+                         FontSize="12" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+              <TextBlock Grid.Column="1" Text="Shortcut"
+                         FontSize="12" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="New connection" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+N" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Search" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+K" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Toggle sidebar" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+\" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Close tab" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+W" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Reconnect" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+R" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Sync vault" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+Shift+S" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Full screen" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+Shift+F" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Switch to tab 1-9" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+1–9" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+            <Grid ColumnDefinitions="160,*"><TextBlock Grid.Column="0" Text="Release focus" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"/><TextBlock Grid.Column="1" Text="Ctrl+Alt+Break" FontFamily="{DynamicResource FontMono}" FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/></Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ════ ABOUT ════ -->
+      <TabItem Header="About">
+        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <TextBlock Text="SpotDesk" FontSize="22" FontWeight="Medium"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="by Eggspot" FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Version 1.0.0" FontSize="13"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       FontFamily="{DynamicResource FontMono}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text=".NET 10 · AvaloniaUI 11 · C# 13" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       HorizontalAlignment="Center"/>
+          </StackPanel>
+        </Grid>
+      </TabItem>
+
+    </TabControl>
+  </Grid>
+
+</UserControl>

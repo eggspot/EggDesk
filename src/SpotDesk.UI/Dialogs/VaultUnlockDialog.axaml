@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SpotDesk.UI.Dialogs.VaultUnlockDialog"
+        Title="Unlock Vault"
+        Width="380" Height="220"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgElevatedBrush}">
+
+  <StackPanel Margin="32" Spacing="16">
+    <TextBlock Text="Unlock vault"
+               FontSize="18" FontWeight="Medium"
+               Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+    <TextBlock Text="Enter your master password to access credentials."
+               FontSize="13"
+               Foreground="{DynamicResource TextSecondaryBrush}"
+               TextWrapping="Wrap"/>
+
+    <TextBox PasswordChar="●"
+             Watermark="Master password"
+             x:Name="PasswordBox"
+             FontSize="14"
+             Background="{DynamicResource BgSurfaceBrush}"
+             BorderBrush="{DynamicResource BorderDefaultBrush}"
+             CornerRadius="6"/>
+
+    <CheckBox Content="Remember for this session"
+              Foreground="{DynamicResource TextSecondaryBrush}"
+              FontSize="13"/>
+
+    <Button Content="Unlock"
+            Classes="primary-button"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Center"
+            IsDefault="True"/>
+  </StackPanel>
+</Window>

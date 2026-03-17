@@ -1,0 +1,85 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Views.WelcomeView"
+             x:DataType="vm:MainWindowViewModel">
+
+  <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+    <StackPanel Spacing="24" HorizontalAlignment="Center">
+
+      <StackPanel Spacing="8" HorizontalAlignment="Center">
+        <TextBlock Text="SpotDesk  by Eggspot"
+                   FontSize="22" FontWeight="Medium"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="Connect to your servers faster."
+                   FontSize="14"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center"/>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+        <Button Classes="primary-button" Content="+ New Connection"
+                Command="{Binding NewConnectionCommand}"/>
+        <Button Content="Import from RDM"
+                Background="{DynamicResource BgElevatedBrush}"
+                Foreground="{DynamicResource TextPrimaryBrush}"
+                CornerRadius="6" Padding="16,8"/>
+      </StackPanel>
+
+      <!-- GitHub sign-in prompt -->
+      <Border Background="{DynamicResource BgSurfaceBrush}"
+              CornerRadius="8" Padding="20,14"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Vault sync requires GitHub sign-in"
+                     FontSize="13" FontWeight="Medium"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"/>
+          <TextBlock Text="Your vault is end-to-end encrypted. GitHub identity is used as the key — no password needed."
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     HorizontalAlignment="Center"
+                     MaxWidth="380"/>
+          <Button Content="Sign in with GitHub"
+                  Classes="primary-button"
+                  HorizontalAlignment="Center"
+                  Padding="24,8"
+                  Command="{Binding SignInWithGitHubCommand}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Quick tips -->
+      <Border Background="{DynamicResource BgSurfaceBrush}"
+              CornerRadius="8" Padding="24,16">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Quick Tips" Classes="sidebar-group" Margin="0,0,0,4"/>
+          <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="Ctrl+K" FontFamily="{DynamicResource FontMono}"
+                       FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/>
+            <TextBlock Grid.Row="0" Grid.Column="1"
+                       Text="Search connections"
+                       FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Text="Ctrl+N" FontFamily="{DynamicResource FontMono}"
+                       FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/>
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                       Text="New connection"
+                       FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBlock Grid.Row="2" Grid.Column="0"
+                       Text="Ctrl+\" FontFamily="{DynamicResource FontMono}"
+                       FontSize="12" Foreground="{DynamicResource AccentTextBrush}"/>
+            <TextBlock Grid.Row="2" Grid.Column="1"
+                       Text="Toggle sidebar"
+                       FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </Grid>
+
+</UserControl>

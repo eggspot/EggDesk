@@ -1,0 +1,244 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SpotDesk.UI.ViewModels"
+        xmlns:dg="using:Avalonia.Controls"
+        x:Class="SpotDesk.UI.Dialogs.ImportWizard"
+        x:DataType="vm:ImportWizardViewModel"
+        Title="Import Connections"
+        Width="640" Height="520"
+        Background="{DynamicResource BgBaseBrush}"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid RowDefinitions="56,*,64">
+
+    <!-- Header with step indicator -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource BgSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="24,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding StepTitle}"
+                   FontSize="16" FontWeight="Medium"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding StepIndicator}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextTertiaryBrush}"
+                   VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <!-- Step content -->
+    <Panel Grid.Row="1">
+
+      <!-- STEP 1: Select File -->
+      <ScrollViewer IsVisible="{Binding IsStepSelectFile}" Padding="24">
+        <StackPanel Spacing="16">
+          <TextBlock Text="Choose an import source"
+                     FontSize="13"
+                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+          <!-- Drag-drop area -->
+          <Border x:Name="DropZone"
+                  Background="{DynamicResource BgSurfaceBrush}"
+                  BorderBrush="{DynamicResource BorderDefaultBrush}"
+                  BorderThickness="2" CornerRadius="8"
+                  Height="140"
+                  DragDrop.AllowDrop="True">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+              <TextBlock Text="Drag &amp; drop .rdp / .rdf / .json here"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="or" FontSize="12"
+                         Foreground="{DynamicResource TextTertiaryBrush}"
+                         HorizontalAlignment="Center"/>
+              <Button Classes="primary-button" Content="Browse for file…"
+                      Command="{Binding BrowseFileCommand}"
+                      HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+
+          <!-- Selected file info -->
+          <Border Background="{DynamicResource BgSurfaceBrush}"
+                  CornerRadius="6" Padding="12"
+                  IsVisible="{Binding HasSelectedFile}">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0">
+                <TextBlock Text="{Binding SelectedFileName}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{Binding DetectedFormat, StringFormat='Format: {0}'}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextTertiaryBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="1" Content="✕" Classes="ghost-button"
+                      Command="{Binding ClearFileCommand}"/>
+            </Grid>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- STEP 2: Configure -->
+      <ScrollViewer IsVisible="{Binding IsStepConfigure}" Padding="24">
+        <StackPanel Spacing="16">
+
+          <!-- Optional master password for RDM files -->
+          <StackPanel Spacing="8" IsVisible="{Binding NeedsMasterKey}">
+            <TextBlock Text="This file is encrypted. Enter the master password:"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBox Text="{Binding MasterKey}"
+                     PasswordChar="•"
+                     Watermark="Master password"/>
+          </StackPanel>
+
+          <!-- Preview table -->
+          <TextBlock Text="{Binding PreviewCount, StringFormat='{}{0} connections found'}"
+                     FontSize="13"
+                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+          <dg:DataGrid ItemsSource="{Binding PreviewItems}"
+                       Height="240"
+                       IsReadOnly="False"
+                       Background="{DynamicResource BgSurfaceBrush}"
+                       GridLinesVisibility="Horizontal"
+                       BorderBrush="{DynamicResource BorderSubtleBrush}"
+                       BorderThickness="1">
+            <dg:DataGrid.Columns>
+              <dg:DataGridCheckBoxColumn  Header="Import" Binding="{Binding IsSelected}"    Width="60"/>
+              <dg:DataGridTextColumn      Header="Name"   Binding="{Binding Name}"          Width="*"/>
+              <dg:DataGridTextColumn      Header="Host"   Binding="{Binding Host}"          Width="160"/>
+              <dg:DataGridTextColumn      Header="Proto"  Binding="{Binding Protocol}"      Width="60"/>
+            </dg:DataGrid.Columns>
+          </dg:DataGrid>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- STEP 3: Confirm / Group Mapping -->
+      <ScrollViewer IsVisible="{Binding IsStepConfirm}" Padding="24">
+        <StackPanel Spacing="16">
+          <TextBlock Text="Map groups and handle conflicts"
+                     FontSize="13"
+                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+          <StackPanel Spacing="8">
+            <TextBlock Text="Target group" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <ComboBox ItemsSource="{Binding AvailableGroups}"
+                      SelectedItem="{Binding TargetGroup}"
+                      Width="300"/>
+          </StackPanel>
+
+          <StackPanel Spacing="8">
+            <TextBlock Text="On conflict" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <StackPanel Spacing="4">
+              <RadioButton Content="Skip duplicates"  GroupName="Conflict"
+                           IsChecked="{Binding ConflictSkip}"/>
+              <RadioButton Content="Overwrite"        GroupName="Conflict"
+                           IsChecked="{Binding ConflictOverwrite}"/>
+              <RadioButton Content="Rename (add _2)"  GroupName="Conflict"
+                           IsChecked="{Binding ConflictRename}"/>
+            </StackPanel>
+          </StackPanel>
+
+          <Border Background="{DynamicResource BgSurfaceBrush}"
+                  CornerRadius="6" Padding="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Summary"
+                         FontSize="12" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+              <TextBlock Text="{Binding ImportSummary}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextPrimaryBrush}"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- STEP 4: Progress -->
+      <StackPanel IsVisible="{Binding IsStepProgress}"
+                  VerticalAlignment="Center" HorizontalAlignment="Center"
+                  Spacing="16" Width="400">
+        <TextBlock Text="Importing…"
+                   FontSize="14" FontWeight="Medium"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <ProgressBar Value="{Binding ImportProgress}"
+                     Maximum="100"
+                     Height="6"
+                     Foreground="{DynamicResource AccentPrimaryBrush}"
+                     Background="{DynamicResource BgElevatedBrush}"
+                     CornerRadius="3"/>
+        <TextBlock Text="{Binding CurrentImportName}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextTertiaryBrush}"
+                   HorizontalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"/>
+      </StackPanel>
+
+      <!-- STEP 5: Result -->
+      <StackPanel IsVisible="{Binding IsStepResult}"
+                  VerticalAlignment="Center" HorizontalAlignment="Center"
+                  Spacing="16">
+        <TextBlock Text="Import complete"
+                   FontSize="18" FontWeight="Medium"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <StackPanel Orientation="Horizontal" Spacing="24" HorizontalAlignment="Center">
+          <StackPanel HorizontalAlignment="Center" Spacing="4">
+            <TextBlock Text="{Binding ImportedCount}"
+                       FontSize="32" FontWeight="Medium"
+                       Foreground="{DynamicResource StatusConnectedBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="imported"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"/>
+          </StackPanel>
+          <StackPanel HorizontalAlignment="Center" Spacing="4">
+            <TextBlock Text="{Binding SkippedCount}"
+                       FontSize="32" FontWeight="Medium"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="skipped"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"/>
+          </StackPanel>
+        </StackPanel>
+        <Button Classes="primary-button" Content="Open Connection Tree"
+                Command="{Binding OpenConnectionTreeCommand}"
+                HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Panel>
+
+    <!-- Footer nav -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource BgSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="24,0">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" VerticalAlignment="Center">
+        <Button Grid.Column="0" Content="Cancel"
+                Classes="ghost-button"
+                Command="{Binding CancelCommand}"/>
+        <Button Grid.Column="2" Content="← Back"
+                Background="{DynamicResource BgElevatedBrush}"
+                Foreground="{DynamicResource TextPrimaryBrush}"
+                CornerRadius="6" Padding="16,8" Margin="0,0,8,0"
+                IsEnabled="{Binding CanGoBack}"
+                Command="{Binding BackCommand}"/>
+        <Button Grid.Column="3" Content="{Binding NextButtonText}"
+                Classes="primary-button"
+                IsEnabled="{Binding CanGoNext}"
+                Command="{Binding NextCommand}"/>
+      </Grid>
+    </Border>
+
+  </Grid>
+</Window>

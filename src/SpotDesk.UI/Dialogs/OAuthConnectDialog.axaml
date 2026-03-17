@@ -1,0 +1,53 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SpotDesk.UI.Dialogs.OAuthConnectDialog"
+        Title="Connect SpotDesk"
+        Width="420" Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgElevatedBrush}">
+
+  <StackPanel Margin="32" Spacing="20" VerticalAlignment="Center">
+
+    <TextBlock Text="Connect SpotDesk to GitHub"
+               FontSize="18" FontWeight="Medium"
+               Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+    <TextBlock Text="Your vault is encrypted using your GitHub identity.
+No master password required. Your credentials never leave your devices."
+               FontSize="13"
+               Foreground="{DynamicResource TextSecondaryBrush}"
+               TextWrapping="Wrap"/>
+
+    <StackPanel Spacing="10">
+      <Button x:Name="GitHubButton"
+              Content="Connect with GitHub"
+              Classes="primary-button"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"/>
+
+      <Button x:Name="BitbucketButton"
+              Content="Connect with Bitbucket"
+              Background="{DynamicResource BgSurfaceBrush}"
+              Foreground="{DynamicResource TextPrimaryBrush}"
+              CornerRadius="6" Padding="16,8"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"/>
+
+      <Button x:Name="MasterPasswordButton"
+              Content="Use master password instead"
+              Background="Transparent"
+              Foreground="{DynamicResource TextSecondaryBrush}"
+              BorderThickness="0"
+              FontSize="12"
+              HorizontalAlignment="Center"/>
+    </StackPanel>
+
+    <TextBlock x:Name="StatusLabel"
+               FontSize="12"
+               Foreground="{DynamicResource TextSecondaryBrush}"
+               HorizontalAlignment="Center"
+               IsVisible="False"/>
+
+  </StackPanel>
+</Window>

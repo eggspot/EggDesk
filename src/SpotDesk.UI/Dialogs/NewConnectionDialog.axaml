@@ -1,0 +1,112 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SpotDesk.UI.Dialogs.NewConnectionDialog"
+        Title="New Connection"
+        Width="480" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgElevatedBrush}">
+
+  <StackPanel Margin="24" Spacing="16">
+
+    <!-- Protocol selector -->
+    <StackPanel Spacing="6">
+      <TextBlock Text="Protocol" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <ToggleButton Content="RDP" IsChecked="True" CornerRadius="6" Padding="12,6"/>
+        <ToggleButton Content="SSH" CornerRadius="6" Padding="12,6"/>
+        <ToggleButton Content="VNC" CornerRadius="6" Padding="12,6"/>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Name -->
+    <StackPanel Spacing="6">
+      <TextBlock Text="Name" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+      <TextBox Watermark="prod-web-01" FontSize="14"
+               Background="{DynamicResource BgSurfaceBrush}"
+               BorderBrush="{DynamicResource BorderDefaultBrush}"
+               CornerRadius="6"/>
+    </StackPanel>
+
+    <!-- Host + Port -->
+    <Grid ColumnDefinitions="*,120" ColumnSpacing="12">
+      <StackPanel Grid.Column="0" Spacing="6">
+        <TextBlock Text="Host" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <TextBox Watermark="192.168.1.100" FontSize="14"
+                 FontFamily="{DynamicResource FontMono}"
+                 Background="{DynamicResource BgSurfaceBrush}"
+                 BorderBrush="{DynamicResource BorderDefaultBrush}"
+                 CornerRadius="6"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6">
+        <TextBlock Text="Port" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <TextBox Watermark="3389" FontSize="14"
+                 FontFamily="{DynamicResource FontMono}"
+                 Background="{DynamicResource BgSurfaceBrush}"
+                 BorderBrush="{DynamicResource BorderDefaultBrush}"
+                 CornerRadius="6"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Credential -->
+    <StackPanel Spacing="6">
+      <TextBlock Text="Credential" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+      <ComboBox HorizontalAlignment="Stretch" FontSize="14"
+                Background="{DynamicResource BgSurfaceBrush}">
+        <ComboBoxItem Content="+ New credential"/>
+      </ComboBox>
+    </StackPanel>
+
+    <!-- Group + Tags -->
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+      <StackPanel Grid.Column="0" Spacing="6">
+        <TextBlock Text="Group" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <ComboBox HorizontalAlignment="Stretch" FontSize="14"
+                  Background="{DynamicResource BgSurfaceBrush}"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="6">
+        <TextBlock Text="Tags" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <TextBox Watermark="web, prod" FontSize="14"
+                 Background="{DynamicResource BgSurfaceBrush}"
+                 BorderBrush="{DynamicResource BorderDefaultBrush}"
+                 CornerRadius="6"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Advanced (collapsed) -->
+    <Expander Header="Advanced" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13">
+      <StackPanel Spacing="8" Margin="0,8,0,0">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Text="Width" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBox Watermark="1920" FontFamily="{DynamicResource FontMono}"
+                     Background="{DynamicResource BgSurfaceBrush}" CornerRadius="6"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="Height" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <TextBox Watermark="1080" FontFamily="{DynamicResource FontMono}"
+                     Background="{DynamicResource BgSurfaceBrush}" CornerRadius="6"/>
+          </StackPanel>
+        </Grid>
+        <CheckBox Content="Enable drive redirection"
+                  Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
+        <CheckBox Content="Enable RemoteFX / AVC444"
+                  IsChecked="True"
+                  Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
+      </StackPanel>
+    </Expander>
+
+    <!-- Actions -->
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+      <Button Grid.Column="0" Content="Cancel"
+              Background="{DynamicResource BgSurfaceBrush}"
+              Foreground="{DynamicResource TextPrimaryBrush}"
+              CornerRadius="6" HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center" Padding="0,10"/>
+      <Button Grid.Column="1" Content="Save &amp; Connect"
+              Classes="primary-button"
+              HorizontalAlignment="Stretch"/>
+    </Grid>
+
+  </StackPanel>
+</Window>

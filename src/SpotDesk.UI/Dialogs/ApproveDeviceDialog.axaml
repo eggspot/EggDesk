@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SpotDesk.UI.Dialogs.ApproveDeviceDialog"
+        Title="Approve New Device"
+        Width="480" Height="320"
+        Background="{DynamicResource BgBaseBrush}"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid RowDefinitions="56,*,64" Margin="24">
+
+    <TextBlock Grid.Row="0"
+               Text="New Device Requesting Access"
+               FontSize="16" FontWeight="Medium"
+               Foreground="{DynamicResource TextPrimaryBrush}"
+               VerticalAlignment="Center"/>
+
+    <StackPanel Grid.Row="1" Spacing="16" VerticalAlignment="Center">
+      <TextBlock Text="A new device wants to access your SpotDesk vault:"
+                 FontSize="13"
+                 Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+      <Border Background="{DynamicResource BgSurfaceBrush}"
+              CornerRadius="8" Padding="16">
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="120,*">
+            <TextBlock Grid.Column="0" Text="Device name:" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <TextBlock Grid.Column="1" x:Name="DeviceName" FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+          </Grid>
+          <Grid ColumnDefinitions="120,*">
+            <TextBlock Grid.Column="0" Text="Device ID:" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <TextBlock Grid.Column="1" x:Name="DeviceId" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       FontFamily="{DynamicResource FontMono}"/>
+          </Grid>
+          <Grid ColumnDefinitions="120,*">
+            <TextBlock Grid.Column="0" Text="Requested:" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+            <TextBlock Grid.Column="1" x:Name="RequestTime" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
+                HorizontalAlignment="Right" VerticalAlignment="Center">
+      <Button Content="Deny" Classes="ghost-button"
+              Click="OnDeny"/>
+      <Button Content="Approve" Classes="primary-button"
+              Click="OnApprove"/>
+    </StackPanel>
+  </Grid>
+
+</Window>

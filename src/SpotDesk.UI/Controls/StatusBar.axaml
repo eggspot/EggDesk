@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Controls.StatusBar"
+             x:DataType="vm:SessionTabViewModel">
+
+  <Border Background="{DynamicResource BgSurfaceBrush}"
+          BorderBrush="{DynamicResource BorderSubtleBrush}"
+          BorderThickness="0,1,0,0"
+          Height="24" Padding="12,0">
+    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+      <!-- Status dot + label -->
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Ellipse Width="6" Height="6"
+                 Fill="{Binding StatusColor, Converter={StaticResource ColorStringToBrushConverter}}"
+                 VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding Status}" FontSize="11"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontFamily="{DynamicResource FontMono}"/>
+      </StackPanel>
+
+      <TextBlock Text="·" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
+      <TextBlock Text="{Binding DisplayName}" FontSize="11"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 FontFamily="{DynamicResource FontMono}"/>
+      <TextBlock Text="·" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"/>
+
+      <!-- Latency — colored by value -->
+      <TextBlock FontSize="11" FontFamily="{DynamicResource FontMono}"
+                 Foreground="{Binding LatencyMs, Converter={StaticResource LatencyColorConverter}}"
+                 Text="{Binding LatencyMs, StringFormat='{}{0}ms'}"/>
+
+      <TextBlock Text="·" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}"
+                 IsVisible="{Binding Codec, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+      <TextBlock Text="{Binding Codec}" FontSize="11"
+                 Foreground="{DynamicResource TextTertiaryBrush}"
+                 FontFamily="{DynamicResource FontMono}"
+                 IsVisible="{Binding Codec, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+    </StackPanel>
+  </Border>
+</UserControl>

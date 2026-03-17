@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SpotDesk.UI.ViewModels"
+             x:Class="SpotDesk.UI.Views.VncView"
+             x:DataType="vm:SessionTabViewModel">
+
+  <Grid RowDefinitions="Auto,*,24">
+
+    <!-- Session toolbar -->
+    <Border Grid.Row="0" x:Name="VncToolbar"
+            Background="{DynamicResource BgSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,0,0,1"
+            IsVisible="False"
+            Padding="8,4">
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <Button Classes="ghost-button" Content="Full Screen"  FontSize="12" ToolTip.Tip="Ctrl+Shift+F"/>
+        <Button Classes="ghost-button" Content="Screenshot"   FontSize="12"/>
+        <Button Classes="ghost-button" Content="Ctrl+Alt+Del" FontSize="12"/>
+        <Button Classes="ghost-button" Content="Disconnect"
+                Command="{Binding DisconnectCommand}" FontSize="12"/>
+      </StackPanel>
+    </Border>
+
+    <!-- VNC frame rendered as Image -->
+    <Border Grid.Row="1" Background="{DynamicResource BgBaseBrush}">
+      <Image x:Name="VncImage"
+             Stretch="Fill"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"/>
+    </Border>
+
+    <!-- Reconnect overlay -->
+    <Border Grid.Row="1" ZIndex="5"
+            Background="{DynamicResource BgBaseBrush}"
+            IsVisible="{Binding IsReconnecting}">
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+        <TextBlock Text="VNC connection lost"
+                   FontSize="16" FontWeight="Medium"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="{Binding ReconnectCountdown, StringFormat='Reconnecting in {0}s…'}"
+                   FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center"/>
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <Button Classes="primary-button" Content="Reconnect now"
+                  Command="{Binding ReconnectCommand}"/>
+          <Button Content="Cancel"
+                  Background="{DynamicResource BgElevatedBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
+                  CornerRadius="6" Padding="16,8"
+                  Command="{Binding CancelReconnectCommand}"/>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Status bar -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource BgSurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="12,0">
+      <Grid ColumnDefinitions="8,*,Auto">
+        <Ellipse Grid.Column="0" Width="6" Height="6"
+                 Fill="{Binding StatusColor, Converter={StaticResource ColorStringToBrushConverter}}"
+                 VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" FontSize="11"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   VerticalAlignment="Center"
+                   Text="{Binding StatusMessage}"/>
+        <TextBlock Grid.Column="2" FontSize="11"
+                   Foreground="{Binding LatencyMs, Converter={StaticResource LatencyColorConverter}}"
+                   VerticalAlignment="Center"
+                   Text="{Binding LatencyMs, StringFormat='{}{0}ms'}"/>
+      </Grid>
+    </Border>
+  </Grid>
+
+</UserControl>

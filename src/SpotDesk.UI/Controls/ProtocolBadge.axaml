@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="SpotDesk.UI.Controls.ProtocolBadge">
+
+  <Border x:Name="BadgeBorder"
+          CornerRadius="3"
+          Padding="5,2"
+          Background="{DynamicResource BgElevatedBrush}"
+          BorderBrush="{DynamicResource BorderSubtleBrush}"
+          BorderThickness="1">
+    <TextBlock x:Name="BadgeLabel"
+               FontSize="10"
+               FontWeight="Medium"
+               FontFamily="{DynamicResource FontMono}"
+               Foreground="{DynamicResource TextSecondaryBrush}"
+               VerticalAlignment="Center"/>
+  </Border>
+
+</UserControl>
