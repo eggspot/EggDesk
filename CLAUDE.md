@@ -77,9 +77,13 @@ Master key is held pinned in memory via `SessionLockService` (GCHandle).
 All vault JSON types use System.Text.Json source-gen for NativeAOT compatibility.
 
 **Auth** (`SpotDesk.Core/Auth/`)
-OAuth PKCE flow via `IdentityModel.OidcClient`, loopback callback on random port.
+OAuth PKCE flow implemented manually (no OidcClient — GitHub/Bitbucket don't expose OIDC discovery).
+Flow: generate verifier+SHA-256 challenge → open system browser → `HttpListener` loopback on random port → validate `state` → POST token exchange.
+GitHub token URL: `github.com/login/oauth/access_token` — PKCE, no `client_secret` needed.
+Bitbucket token URL: `bitbucket.org/site/oauth2/access_token` — Basic auth with `client_id:client_secret`.
+Secrets via env vars: `SPOTDESK_GITHUB_CLIENT_ID`, `SPOTDESK_BITBUCKET_CLIENT_ID`, `SPOTDESK_BITBUCKET_CLIENT_SECRET`.
 OS keychain abstracted via `IKeychainService` (Windows: CredWrite, macOS: Keychain, Linux: libsecret → encrypted file fallback).
-`OAuthService` caches `UserId` in memory for 24h.
+`OAuthService` caches identity in memory for 24h.
 
 **Git Sync** (`SpotDesk.Core/Sync/`)
 `GitSyncService` uses LibGit2Sharp. Fast-forward-only pull. Commit message: `"spotdesk: sync [timestamp]"`.
@@ -147,7 +151,6 @@ Default: Dark. `ThemeService.SetTheme(AppTheme)` drives `RequestedThemeVariant`.
 | `Avalonia`, `Avalonia.X11` | UI framework |
 | `CommunityToolkit.Mvvm` | ViewModels (source-gen, AOT-safe) |
 | `Konscious.Security.Cryptography.Argon2` | Argon2id KDF |
-| `IdentityModel.OidcClient` | OAuth PKCE |
 | `SSH.NET` | SSH transport |
 | `LibGit2Sharp` | Git sync |
 | `RemoteViewing` | VNC |
