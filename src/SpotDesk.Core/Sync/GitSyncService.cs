@@ -13,6 +13,13 @@ public interface IGitSyncService
     Task FlushPendingAsync(CancellationToken ct = default);
 }
 
+/// <summary>
+/// Git sync powered by LibGit2Sharp — no external git CLI required.
+/// LibGit2Sharp bundles the native libgit2 binary for each platform,
+/// so the app works as a single executable with no external dependencies.
+/// Native libs are extracted from the single-file bundle at startup via
+/// <c>IncludeNativeLibrariesForSelfExtract</c>.
+/// </summary>
 public class GitSyncService : IGitSyncService
 {
     private readonly IKeychainService _keychain;
@@ -66,9 +73,11 @@ public class GitSyncService : IGitSyncService
                 var sig = BuildSignature();
                 Commands.Pull(repo, sig, pullOptions);
 
-                // Stage all changes and commit
+                // Stage all changes and commit only when there are actual changes
                 Commands.Stage(repo, "*");
-                if (repo.Index.Count > 0)
+                var hasStagedChanges = repo.Diff.Compare<TreeChanges>(
+                    repo.Head.Tip?.Tree, DiffTargets.Index).Count > 0;
+                if (hasStagedChanges)
                 {
                     var timestamp = DateTimeOffset.UtcNow.ToString("o");
                     repo.Commit($"spotdesk: sync {timestamp}", sig, sig);

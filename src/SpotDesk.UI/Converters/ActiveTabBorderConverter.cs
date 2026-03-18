@@ -16,5 +16,5 @@ public sealed class ActiveTabBorderConverter : IValueConverter
         value is true ? AccentBrush : Brushes.Transparent;
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
+        Avalonia.Data.BindingOperations.DoNothing;
 }

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DataEntries>
+  <Connection>
+    <Name>Web Server RDP</Name>
+    <Host>192.168.1.10</Host>
+    <Port>3389</Port>
+    <ConnectionType>1</ConnectionType>
+    <UserName>administrator</UserName>
+    <Password>d2ViUGFzcw==</Password>
+    <Group>Production</Group>
+    <Tags>rdp,server</Tags>
+    <Description>Main production web server</Description>
+  </Connection>
+  <Connection>
+    <Name>Database SSH</Name>
+    <Host>db.internal.example.com</Host>
+    <Port>22</Port>
+    <ConnectionType>66</ConnectionType>
+    <UserName>dbadmin</UserName>
+    <Password></Password>
+    <Group>Production</Group>
+    <Tags>ssh,database</Tags>
+    <Description>Database SSH access</Description>
+  </Connection>
+  <Connection>
+    <Name>Dev VNC</Name>
+    <Host>dev-machine.local</Host>
+    <Port>5900</Port>
+    <ConnectionType>12</ConnectionType>
+    <UserName>devuser</UserName>
+    <Password>ZGV2cGFzcw==</Password>
+    <Group>Development</Group>
+    <Tags>vnc,dev</Tags>
+    <Description>Developer workstation</Description>
+  </Connection>
+</DataEntries>

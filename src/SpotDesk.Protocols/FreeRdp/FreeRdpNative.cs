@@ -42,6 +42,37 @@ internal static partial class FreeRdpNative
     [LibraryImport("libfreerdp3", EntryPoint = "freerdp_update_get_pointer")]
     internal static partial IntPtr freerdp_update_get_pointer(IntPtr instance);
 
+    /// <summary>Returns the rdpInput* sub-system pointer for sending keyboard/mouse events.</summary>
+    [LibraryImport("libfreerdp3", EntryPoint = "freerdp_get_sub_system")]
+    internal static partial IntPtr freerdp_input_get(IntPtr instance);
+
+    /// <summary>Sends a keyboard scancode event. flags = KBD_FLAGS_DOWN | KBD_FLAGS_UP | KBD_FLAGS_EXTENDED.</summary>
+    [LibraryImport("libfreerdp3", EntryPoint = "freerdp_input_send_keyboard_event")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool freerdp_input_send_keyboard_event(IntPtr input, ushort flags, ushort code);
+
+    /// <summary>Sends a mouse event. flags = PTR_FLAGS_MOVE | PTR_FLAGS_DOWN | PTR_FLAGS_BUTTON1/2/3.</summary>
+    [LibraryImport("libfreerdp3", EntryPoint = "freerdp_input_send_mouse_event")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool freerdp_input_send_mouse_event(IntPtr input, ushort flags, ushort x, ushort y);
+
+    // Keyboard event flags (freerdp/input.h)
+    internal const ushort KBD_FLAGS_EXTENDED = 0x0100;
+    internal const ushort KBD_FLAGS_DOWN     = 0x4000;
+    internal const ushort KBD_FLAGS_UP       = 0x8000;
+
+    // Mouse event flags (freerdp/input.h)
+    internal const ushort PTR_FLAGS_MOVE    = 0x0800;
+    internal const ushort PTR_FLAGS_DOWN    = 0x8000;
+    internal const ushort PTR_FLAGS_BUTTON1 = 0x1000; // Left
+    internal const ushort PTR_FLAGS_BUTTON2 = 0x2000; // Right
+    internal const ushort PTR_FLAGS_BUTTON3 = 0x4000; // Middle
+
+    // Scancodes for Ctrl+Alt+Del sequence (XT set-1)
+    internal const ushort SCANCODE_CTRL   = 0x1D;
+    internal const ushort SCANCODE_ALT    = 0x38;
+    internal const ushort SCANCODE_DELETE = 0x53;
+
     // FreeRDP settings IDs (subset)
     internal const uint FreeRDP_ServerHostname = 1194;
     internal const uint FreeRDP_ServerPort = 1197;

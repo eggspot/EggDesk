@@ -49,10 +49,15 @@ public partial class SessionTabViewModel : ObservableObject, IDisposable
 
     // ── RDP/VNC frame bitmap (used by RdpView / VncView) ─────────────────
 
+    public WriteableBitmap? CurrentFrame { get; private set; }
+
     public event Action<WriteableBitmap?>? FrameBitmapChanged;
 
-    public void NotifyFrameBitmapChanged(WriteableBitmap? bitmap) =>
+    public void NotifyFrameBitmapChanged(WriteableBitmap? bitmap)
+    {
+        CurrentFrame = bitmap;
         FrameBitmapChanged?.Invoke(bitmap);
+    }
 
     // ── SshTabViewModel compatibility (SshView reads this) ───────────────
 
@@ -131,22 +136,38 @@ public partial class SessionTabViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void TakeScreenshot()
     {
-        // TODO: capture the current FrameBitmap and save to Downloads
+        if (CurrentFrame is null) return;
+
+        var downloads = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        if (!Directory.Exists(downloads))
+            downloads = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+        var safe     = string.Concat(DisplayName.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        var filename = $"spotdesk-{safe}-{DateTime.Now:yyyyMMdd-HHmmss}.png";
+        var path     = Path.Combine(downloads, filename);
+
+        CurrentFrame.Save(path);
     }
 
+    /// <summary>
+    /// Raised when Ctrl+Alt+Del should be forwarded to the active session backend.
+    /// The session view subscribes and calls the backend's SendCtrlAltDel().
+    /// </summary>
+    public event Action? CtrlAltDelRequested;
+
     [RelayCommand]
-    private void SendCtrlAltDel()
-    {
-        // TODO: forward the key combo to the active session
-    }
+    private void SendCtrlAltDel() => CtrlAltDelRequested?.Invoke();
 
     // ── Input routing for SSH ─────────────────────────────────────────────
 
-    public void HandleKeyInput(Avalonia.Input.KeyEventArgs e)
-    {
-        // TODO: translate Avalonia key event → SSH terminal byte sequence
-        // and write to the SshSession's stdin pipe.
-    }
+    /// <summary>
+    /// Raised when a key event should be forwarded to the SSH session's stdin pipe.
+    /// The session view subscribes and writes the translated byte sequence.
+    /// </summary>
+    public event Action<Avalonia.Input.KeyEventArgs>? KeyInputReceived;
+
+    public void HandleKeyInput(Avalonia.Input.KeyEventArgs e) => KeyInputReceived?.Invoke(e);
 
     // ── Auto-reconnect ────────────────────────────────────────────────────
 
@@ -188,7 +209,8 @@ public partial class SessionTabViewModel : ObservableObject, IDisposable
     {
         _reconnectCts?.Cancel();
         _reconnectTimer?.Dispose();
-        // TODO: ensure ISessionManager.Close(ConnectionId)
+        // Session backend cleanup is handled by the session manager via DisconnectAsync,
+        // which the view calls before CloseTab. Nothing more to do here.
         GC.SuppressFinalize(this);
     }
 }

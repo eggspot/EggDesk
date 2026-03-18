@@ -3,6 +3,7 @@
         xmlns:vm="using:SpotDesk.UI.ViewModels"
         xmlns:views="using:SpotDesk.UI.Views"
         xmlns:controls="using:SpotDesk.UI.Controls"
+        xmlns:local="using:SpotDesk.UI.Views"
         x:Class="SpotDesk.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="SpotDesk"
@@ -134,7 +135,11 @@
         <views:WelcomeView IsVisible="{Binding IsWelcomeVisible}"/>
         <!-- Active session view rendered by SessionTabView -->
         <ContentControl Content="{Binding ActiveTab}"
-                        IsVisible="{Binding !IsWelcomeVisible}"/>
+                        IsVisible="{Binding !IsWelcomeVisible}">
+          <ContentControl.ContentTemplate>
+            <local:SessionViewSelector/>
+          </ContentControl.ContentTemplate>
+        </ContentControl>
       </Grid>
     </Grid>
   </Grid>

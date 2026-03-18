@@ -13,8 +13,44 @@ public enum OAuthProvider { GitHub, Bitbucket }
 
 public interface IOAuthService
 {
+    // ── Browser / redirect flows ──────────────────────────────────────────
     Task<GitHubIdentity> AuthenticateGitHubAsync(CancellationToken ct = default);
     Task<BitbucketIdentity> AuthenticateBitbucketAsync(CancellationToken ct = default);
+
+    // ── PAT (Personal Access Token) — no OAuth App required ──────────────
+    /// <summary>
+    /// Validates a GitHub Personal Access Token against the API, stores it in the
+    /// keychain and caches the identity — no browser redirect needed.
+    /// </summary>
+    Task<GitHubIdentity> AuthenticateWithPatAsync(string pat, CancellationToken ct = default);
+
+    // ── Device Authorization Grant — works without a redirect URI ────────
+    /// <summary>
+    /// Step 1: asks GitHub for a device code and user code.
+    /// Show <see cref="DeviceFlowChallenge.UserCode"/> and
+    /// <see cref="DeviceFlowChallenge.VerificationUri"/> to the user.
+    /// </summary>
+    Task<DeviceFlowChallenge> StartGitHubDeviceFlowAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Step 2: polls GitHub until the user approves (or the code expires).
+    /// Respects <see cref="DeviceFlowChallenge.Interval"/> and back-off on slow_down.
+    /// Throws <see cref="OperationCanceledException"/> if <paramref name="ct"/> is cancelled.
+    /// </summary>
+    Task<GitHubIdentity> PollGitHubDeviceFlowAsync(DeviceFlowChallenge challenge, CancellationToken ct = default);
+
+    // ── Bitbucket App Password — no OAuth consumer required ──────────────
+    /// <summary>
+    /// Validates a Bitbucket App Password against the API, stores it in the keychain,
+    /// and caches the identity. Bitbucket App Passwords use HTTP Basic auth
+    /// (username + app password) and support the same repo scopes as OAuth tokens.
+    /// Create one at: bitbucket.org/account/settings/app-passwords/new
+    /// Required permissions: Account (read), Repositories (read, write).
+    /// </summary>
+    Task<BitbucketIdentity> AuthenticateWithBitbucketAppPasswordAsync(
+        string username, string appPassword, CancellationToken ct = default);
+
+    // ── Shared ────────────────────────────────────────────────────────────
     Task<GitHubIdentity> GetCachedIdentityAsync(CancellationToken ct = default);
     Task<bool> IsAuthenticatedAsync(OAuthProvider provider, CancellationToken ct = default);
     Task RevokeAsync(OAuthProvider provider);
@@ -24,16 +60,23 @@ public class OAuthService : IOAuthService
 {
     private readonly IKeychainService _keychain;
     private readonly HttpClient _http;
+    private OAuthClientConfig _config;
 
     private GitHubIdentity? _githubCache;
     private DateTimeOffset _githubCacheExpiry;
 
-    public OAuthService(IKeychainService keychain, HttpClient? http = null)
+    public OAuthService(IKeychainService keychain, OAuthClientConfig? config = null, HttpClient? http = null)
     {
         _keychain = keychain;
-        _http = http ?? new HttpClient();
+        _config   = config ?? OAuthClientConfig.Resolve(null, null, null);
+        _http     = http ?? new HttpClient();
         _http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "SpotDesk/1.0");
     }
+
+    /// <summary>
+    /// Hot-reloads client credentials when the user saves new values in Settings.
+    /// </summary>
+    public void UpdateConfig(OAuthClientConfig config) => _config = config;
 
     public async Task<GitHubIdentity> AuthenticateGitHubAsync(CancellationToken ct = default)
     {
@@ -42,8 +85,13 @@ public class OAuthService : IOAuthService
         var (verifier, challenge) = GeneratePkce();
         var state       = GenerateState();
 
+        if (!_config.IsGitHubConfigured)
+            throw new InvalidOperationException(
+                "GitHub Client ID is not configured. " +
+                "Go to Settings → OAuth to enter your GitHub OAuth App credentials.");
+
         var authUrl = "https://github.com/login/oauth/authorize" +
-            $"?client_id={Uri.EscapeDataString(SpotDeskSecrets.GitHubClientId)}" +
+            $"?client_id={Uri.EscapeDataString(_config.GitHubClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&scope={Uri.EscapeDataString("read:user repo")}" +
             $"&state={Uri.EscapeDataString(state)}" +
@@ -58,7 +106,7 @@ public class OAuthService : IOAuthService
         {
             Content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
-                ["client_id"]     = SpotDeskSecrets.GitHubClientId,
+                ["client_id"]     = _config.GitHubClientId,
                 ["code"]          = code,
                 ["redirect_uri"]  = redirectUri,
                 ["code_verifier"] = verifier,
@@ -82,8 +130,13 @@ public class OAuthService : IOAuthService
         var (verifier, challenge) = GeneratePkce();
         var state       = GenerateState();
 
+        if (!_config.IsBitbucketConfigured)
+            throw new InvalidOperationException(
+                "Bitbucket credentials are not configured. " +
+                "Go to Settings → OAuth to enter your Bitbucket OAuth credentials.");
+
         var authUrl = "https://bitbucket.org/site/oauth2/authorize" +
-            $"?client_id={Uri.EscapeDataString(SpotDeskSecrets.BitbucketClientId)}" +
+            $"?client_id={Uri.EscapeDataString(_config.BitbucketClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&scope={Uri.EscapeDataString("account")}" +
             $"&state={Uri.EscapeDataString(state)}" +
@@ -94,7 +147,7 @@ public class OAuthService : IOAuthService
         var code = await RunBrowserFlowAsync(authUrl, port, state, ct);
 
         var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(
-            $"{SpotDeskSecrets.BitbucketClientId}:{SpotDeskSecrets.BitbucketClientSecret}"));
+            $"{_config.BitbucketClientId}:{_config.BitbucketClientSecret}"));
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://bitbucket.org/site/oauth2/access_token")
         {
@@ -122,6 +175,138 @@ public class OAuthService : IOAuthService
             ?? throw new InvalidDataException("Bitbucket user API returned null");
 
         return new BitbucketIdentity(user.AccountId, user.Username, tokenData.AccessToken);
+    }
+
+    // ── PAT (Personal Access Token) ──────────────────────────────────────────
+
+    public async Task<GitHubIdentity> AuthenticateWithPatAsync(string pat, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(pat))
+            throw new ArgumentException("Personal Access Token must not be empty.", nameof(pat));
+
+        var identity = await FetchGitHubIdentityAsync(pat.Trim(), ct);
+        _keychain.Store(KeychainKeys.GitHub, pat.Trim());
+        return identity;
+    }
+
+    // ── Bitbucket App Password ────────────────────────────────────────────────
+
+    public async Task<BitbucketIdentity> AuthenticateWithBitbucketAppPasswordAsync(
+        string username, string appPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Bitbucket username must not be empty.", nameof(username));
+        if (string.IsNullOrWhiteSpace(appPassword))
+            throw new ArgumentException("App password must not be empty.", nameof(appPassword));
+
+        var identity = await FetchBitbucketIdentityAsync(username.Trim(), appPassword.Trim(), ct);
+
+        // Store as "username:appPassword" — the exact Basic auth credential
+        // that LibGit2Sharp needs when pushing/pulling the vault repo.
+        _keychain.Store(KeychainKeys.Bitbucket, $"{username.Trim()}:{appPassword.Trim()}");
+        return identity;
+    }
+
+    // ── Device Authorization Grant ────────────────────────────────────────────
+
+    public async Task<DeviceFlowChallenge> StartGitHubDeviceFlowAsync(CancellationToken ct = default)
+    {
+        var clientId = ResolveDeviceFlowClientId();
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "https://github.com/login/device/code")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = clientId,
+                ["scope"]     = "read:user repo",
+            })
+        };
+        req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        var resp = await _http.SendAsync(req, ct);
+        resp.EnsureSuccessStatusCode();
+
+        var data = await resp.Content.ReadFromJsonAsync(DeviceFlowJsonContext.Default.DeviceCodeResponse, ct)
+            ?? throw new InvalidDataException("Device code response was null.");
+
+        return new DeviceFlowChallenge
+        {
+            DeviceCode      = data.DeviceCode,
+            UserCode        = data.UserCode,
+            VerificationUri = data.VerificationUri,
+            ExpiresIn       = data.ExpiresIn,
+            Interval        = data.Interval,
+            ClientId        = clientId,
+        };
+    }
+
+    public async Task<GitHubIdentity> PollGitHubDeviceFlowAsync(
+        DeviceFlowChallenge challenge, CancellationToken ct = default)
+    {
+        var interval = TimeSpan.FromSeconds(Math.Max(challenge.Interval, 0));
+
+        while (!ct.IsCancellationRequested)
+        {
+            if (interval > TimeSpan.Zero)
+                await Task.Delay(interval, ct);
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, "https://github.com/login/oauth/access_token")
+            {
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["client_id"]   = challenge.ClientId,
+                    ["device_code"] = challenge.DeviceCode,
+                    ["grant_type"]  = "urn:ietf:params:oauth:grant-type:device_code",
+                })
+            };
+            req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+            var resp = await _http.SendAsync(req, ct);
+            resp.EnsureSuccessStatusCode();
+
+            var data = await resp.Content.ReadFromJsonAsync(DeviceFlowJsonContext.Default.DeviceTokenPollResponse, ct)
+                ?? throw new InvalidDataException("Device flow poll response was null.");
+
+            if (!string.IsNullOrEmpty(data.AccessToken))
+            {
+                _keychain.Store(KeychainKeys.GitHub, data.AccessToken);
+                return await FetchGitHubIdentityAsync(data.AccessToken, ct);
+            }
+
+            switch (data.Error)
+            {
+                case "authorization_pending":
+                    continue;
+                case "slow_down":
+                    interval += TimeSpan.FromSeconds(5);
+                    continue;
+                case "expired_token":
+                    throw new InvalidOperationException(
+                        "Device flow authorization expired. Please start the sign-in again.");
+                case "access_denied":
+                    throw new InvalidOperationException(
+                        "Device flow authorization was denied.");
+                default:
+                    throw new InvalidOperationException(
+                        $"Device flow error: {data.Error ?? "unknown"}");
+            }
+        }
+
+        ct.ThrowIfCancellationRequested();
+        throw new OperationCanceledException(ct);
+    }
+
+    private string ResolveDeviceFlowClientId()
+    {
+        // Prefer user-configured → bundled public client ID
+        if (_config.IsGitHubConfigured) return _config.GitHubClientId;
+        if (!string.IsNullOrWhiteSpace(OAuthClientConfig.BundledGitHubClientId))
+            return OAuthClientConfig.BundledGitHubClientId;
+
+        throw new InvalidOperationException(
+            "No GitHub Client ID available. " +
+            "Go to Settings → OAuth to enter your GitHub OAuth App Client ID, " +
+            "or set the SPOTDESK_GITHUB_CLIENT_ID environment variable.");
     }
 
     public async Task<GitHubIdentity> GetCachedIdentityAsync(CancellationToken ct = default)
@@ -166,6 +351,26 @@ public class OAuthService : IOAuthService
         _githubCache       = identity;
         _githubCacheExpiry = DateTimeOffset.UtcNow.AddHours(24);
         return identity;
+    }
+
+    private async Task<BitbucketIdentity> FetchBitbucketIdentityAsync(
+        string username, string appPassword, CancellationToken ct)
+    {
+        var credentials = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes($"{username}:{appPassword}"));
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.bitbucket.org/2.0/user");
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+
+        var response = await _http.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+
+        var user = await response.Content.ReadFromJsonAsync(
+            BitbucketJsonContext.Default.BitbucketUserResponse, ct)
+            ?? throw new InvalidDataException("Bitbucket user API returned null");
+
+        return new BitbucketIdentity(user.AccountId, user.Username, appPassword);
     }
 
     private static async Task<string> RunBrowserFlowAsync(
@@ -257,15 +462,6 @@ public class OAuthService : IOAuthService
     }
 }
 
-// ── build-time secrets (injected via env vars in CI, user sets locally) ──────
-
-file static class SpotDeskSecrets
-{
-    public static string GitHubClientId      => Environment.GetEnvironmentVariable("SPOTDESK_GITHUB_CLIENT_ID")       ?? "YOUR_GITHUB_CLIENT_ID";
-    public static string BitbucketClientId   => Environment.GetEnvironmentVariable("SPOTDESK_BITBUCKET_CLIENT_ID")    ?? "YOUR_BITBUCKET_CLIENT_ID";
-    public static string BitbucketClientSecret => Environment.GetEnvironmentVariable("SPOTDESK_BITBUCKET_CLIENT_SECRET") ?? "YOUR_BITBUCKET_CLIENT_SECRET";
-}
-
 // ── JSON models ───────────────────────────────────────────────────────────────
 
 internal record GitHubUserResponse
@@ -305,3 +501,22 @@ internal partial class BitbucketJsonContext : JsonSerializerContext;
 
 [JsonSerializable(typeof(BitbucketTokenResponse))]
 internal partial class BitbucketTokenContext : JsonSerializerContext;
+
+internal record DeviceCodeResponse
+{
+    [JsonPropertyName("device_code")]      public string DeviceCode      { get; init; } = string.Empty;
+    [JsonPropertyName("user_code")]        public string UserCode        { get; init; } = string.Empty;
+    [JsonPropertyName("verification_uri")] public string VerificationUri { get; init; } = string.Empty;
+    [JsonPropertyName("expires_in")]       public int    ExpiresIn       { get; init; } = 900;
+    [JsonPropertyName("interval")]         public int    Interval        { get; init; } = 5;
+}
+
+internal record DeviceTokenPollResponse
+{
+    [JsonPropertyName("access_token")] public string? AccessToken { get; init; }
+    [JsonPropertyName("error")]        public string? Error       { get; init; }
+}
+
+[JsonSerializable(typeof(DeviceCodeResponse))]
+[JsonSerializable(typeof(DeviceTokenPollResponse))]
+internal partial class DeviceFlowJsonContext : JsonSerializerContext;

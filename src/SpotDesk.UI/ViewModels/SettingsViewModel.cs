@@ -3,6 +3,8 @@ using Avalonia.Data.Converters;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SpotDesk.Core.Auth;
+using SpotDesk.Core.Crypto;
+using SpotDesk.Core.Sync;
 using SpotDesk.Core.Vault;
 
 namespace SpotDesk.UI.ViewModels;
@@ -14,39 +16,75 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISessionLockService _sessionLock;
     private readonly ThemeService _themeService;
     private readonly LocalPrefsService _prefs;
+    private readonly IGitSyncService? _syncService;
+    private readonly string _deviceId;
 
-    [ObservableProperty]
-    private AppTheme _theme = AppTheme.Dark;
-
-    [ObservableProperty] private bool _lockOnScreenLock;
-    [ObservableProperty] private string _autoSyncInterval = "5 min";
-    [ObservableProperty] private string? _gitRemoteUrl;
+    [ObservableProperty] private AppTheme _theme = AppTheme.Dark;
+    [ObservableProperty] private bool     _lockOnScreenLock;
+    [ObservableProperty] private string   _autoSyncInterval = "5 min";
+    [ObservableProperty] private string?  _gitRemoteUrl;
     [ObservableProperty] private DateTimeOffset? _lastSyncedAt;
-    [ObservableProperty] private bool _isGitHubConnected;
-    [ObservableProperty] private string? _githubLogin;
-    [ObservableProperty] private bool _isVaultUnlocked;
-    [ObservableProperty] private string _encryptionInfo = "AES-256-GCM · Argon2id · per-device key envelope";
+    [ObservableProperty] private bool     _isGitHubConnected;
+    [ObservableProperty] private string?  _githubLogin;
+    [ObservableProperty] private bool     _isVaultUnlocked;
+    [ObservableProperty] private string   _encryptionInfo = "AES-256-GCM · Argon2id · per-device key envelope";
     [ObservableProperty] private DeviceInfo[] _trustedDevices = [];
+
+    // Device Flow state — visible while "Connect GitHub" is in progress
+    [ObservableProperty] private string _deviceFlowUserCode        = string.Empty;
+    [ObservableProperty] private string _deviceFlowVerificationUri = string.Empty;
+    [ObservableProperty] private string _deviceFlowStatus          = string.Empty;
+    [ObservableProperty] private bool   _isDeviceFlowActive;
+
+    private CancellationTokenSource? _deviceFlowCts;
+
+    // GitHub PAT — advanced fallback
+    [ObservableProperty] private string _patToken  = string.Empty;
+    [ObservableProperty] private string _patStatus = string.Empty;
+
+    // Bitbucket App Password (Bitbucket has no Device Flow; App Password is the equivalent)
+    [ObservableProperty] private bool    _isBitbucketConnected;
+    [ObservableProperty] private string? _bitbucketDisplayName;
+    [ObservableProperty] private string  _bitbucketUsername    = string.Empty;
+    [ObservableProperty] private string  _bitbucketAppPassword = string.Empty;
+    [ObservableProperty] private string  _bitbucketStatus      = string.Empty;
+
+    // Local → GitHub migration
+    [ObservableProperty] private bool   _isLocalMode;
+    [ObservableProperty] private string _migrationRepoUrl = string.Empty;
+    [ObservableProperty] private string _migrationStatus  = string.Empty;
+    [ObservableProperty] private bool   _isMigrating;
+
+    /// <summary>Migration is ready when GitHub is connected and a repo URL is provided.</summary>
+    public bool CanMigrate => IsLocalMode && IsGitHubConnected && !string.IsNullOrWhiteSpace(MigrationRepoUrl) && !IsMigrating;
 
     public SettingsViewModel(
         IOAuthService oauth,
         IVaultService vault,
         ISessionLockService sessionLock,
         ThemeService? themeService = null,
-        LocalPrefsService? prefs = null)
+        LocalPrefsService? prefs = null,
+        IGitSyncService? syncService = null,
+        IDeviceIdService? deviceIdService = null)
     {
         _oauth        = oauth;
         _vault        = vault;
         _sessionLock  = sessionLock;
         _themeService = themeService ?? new ThemeService();
         _prefs        = prefs        ?? new LocalPrefsService();
-        IsVaultUnlocked = sessionLock.IsUnlocked;
+        _syncService  = syncService;
+        _deviceId     = deviceIdService?.GetDeviceId() ?? string.Empty;
 
+        IsVaultUnlocked = sessionLock.IsUnlocked;
         var saved = _prefs.Load();
-        _theme = saved.Theme;
+        _theme       = saved.Theme;
+        _isLocalMode = saved.VaultMode == "local";
     }
 
-    // ── Theme (live change) ───────────────────────────────────────────────
+    // Notify CanMigrate when its dependencies change
+    partial void OnIsGitHubConnectedChanged(bool value)   => OnPropertyChanged(nameof(CanMigrate));
+    partial void OnMigrationRepoUrlChanged(string value)  => OnPropertyChanged(nameof(CanMigrate));
+    partial void OnIsMigratingChanged(bool value)         => OnPropertyChanged(nameof(CanMigrate));
 
     partial void OnThemeChanged(AppTheme value)
     {
@@ -54,14 +92,62 @@ public partial class SettingsViewModel : ObservableObject
         _prefs.Save(p => p with { Theme = value });
     }
 
-    // ── GitHub ────────────────────────────────────────────────────────────
-
+    // Primary auth: GitHub Device Authorization Grant (RFC 8628).
+    // No redirect URI, no client_secret — single bundled client_id works for all users.
     [RelayCommand]
     private async Task ConnectGitHubAsync()
     {
-        var identity = await _oauth.AuthenticateGitHubAsync();
-        IsGitHubConnected = true;
-        GithubLogin = identity.Login;
+        _deviceFlowCts?.Cancel();
+        _deviceFlowCts = new CancellationTokenSource();
+        var ct = _deviceFlowCts.Token;
+
+        DeviceFlowStatus   = "Starting…";
+        IsDeviceFlowActive = false;
+
+        try
+        {
+            var challenge = await _oauth.StartGitHubDeviceFlowAsync(ct);
+
+            DeviceFlowUserCode        = challenge.UserCode;
+            DeviceFlowVerificationUri = challenge.VerificationUri;
+            DeviceFlowStatus          = $"Enter the code at {challenge.VerificationUri}";
+            IsDeviceFlowActive        = true;
+
+            // Open verification URL automatically — user just pastes the code shown above
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = challenge.VerificationUri, UseShellExecute = true
+            });
+
+            var identity = await _oauth.PollGitHubDeviceFlowAsync(challenge, ct);
+
+            IsGitHubConnected  = true;
+            GithubLogin        = identity.Login;
+            DeviceFlowStatus   = string.Empty;
+            IsDeviceFlowActive = false;
+        }
+        catch (OperationCanceledException)
+        {
+            DeviceFlowStatus   = "Cancelled.";
+            IsDeviceFlowActive = false;
+        }
+        catch (Exception ex)
+        {
+            DeviceFlowStatus   = $"Error: {ex.Message}";
+            IsDeviceFlowActive = false;
+        }
+        finally
+        {
+            DeviceFlowUserCode        = string.Empty;
+            DeviceFlowVerificationUri = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelDeviceFlow()
+    {
+        _deviceFlowCts?.Cancel();
+        _deviceFlowCts = null;
     }
 
     [RelayCommand]
@@ -69,10 +155,121 @@ public partial class SettingsViewModel : ObservableObject
     {
         await _oauth.RevokeAsync(OAuthProvider.GitHub);
         IsGitHubConnected = false;
-        GithubLogin = null;
+        GithubLogin       = null;
     }
 
-    // ── Vault ─────────────────────────────────────────────────────────────
+    // Advanced fallback: Personal Access Token.
+    // Use when Device Flow is unavailable (air-gapped / firewalled environments).
+    [RelayCommand]
+    private async Task AuthenticateWithPatAsync()
+    {
+        PatStatus = "Validating…";
+        try
+        {
+            var identity = await _oauth.AuthenticateWithPatAsync(PatToken.Trim());
+            IsGitHubConnected = true;
+            GithubLogin       = identity.Login;
+            PatStatus         = $"Connected as {identity.Login}";
+            PatToken          = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            PatStatus = $"Error: {ex.Message}";
+        }
+    }
+
+    // Bitbucket App Password auth.
+    // Create at: bitbucket.org/account/settings/app-passwords/new
+    // Required scopes: Account (read), Repositories (read, write).
+    [RelayCommand]
+    private async Task ConnectBitbucketAsync()
+    {
+        BitbucketStatus = "Validating…";
+        try
+        {
+            var identity = await _oauth.AuthenticateWithBitbucketAppPasswordAsync(
+                BitbucketUsername.Trim(), BitbucketAppPassword.Trim());
+            IsBitbucketConnected  = true;
+            BitbucketDisplayName  = identity.Username;
+            BitbucketStatus       = $"Connected as {identity.Username}";
+            BitbucketAppPassword  = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            BitbucketStatus = $"Error: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task DisconnectBitbucketAsync()
+    {
+        await _oauth.RevokeAsync(OAuthProvider.Bitbucket);
+        IsBitbucketConnected = false;
+        BitbucketDisplayName = null;
+        BitbucketStatus      = string.Empty;
+    }
+
+    // ── Local → GitHub migration ───────────────────────────────────────────────
+    // Steps:
+    //   1. Re-wrap the in-memory master key with the GitHub device key  (VaultService)
+    //   2. Init or clone the target repo                                (GitSyncService)
+    //   3. Push vault.json as the first commit                          (GitSyncService)
+    //   4. Persist the mode change and repo path to local prefs
+
+    [RelayCommand]
+    private async Task MigrateToGitSyncAsync()
+    {
+        IsMigrating     = true;
+        MigrationStatus = "Migrating vault…";
+        try
+        {
+            // Step 1 — get current GitHub identity and re-wrap the master key
+            var identity = await _oauth.GetCachedIdentityAsync();
+            await _vault.MigrateLocalToGitHubAsync(identity);
+            MigrationStatus = "Vault re-encrypted for GitHub sync ✓";
+
+            // Step 2 & 3 — init/clone repo and push
+            if (_syncService is not null)
+            {
+                var vaultDir = _prefs.Load().VaultRepoPath;
+                if (string.IsNullOrWhiteSpace(vaultDir))
+                {
+                    // Default local path: %AppData%/spotdesk/vault-repo
+                    vaultDir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "spotdesk", "vault-repo");
+                }
+
+                MigrationStatus = "Initialising Git repo…";
+                await _syncService.InitOrCloneAsync(MigrationRepoUrl.Trim(), vaultDir);
+
+                MigrationStatus = "Pushing vault…";
+                await _syncService.SyncAsync(vaultDir);
+
+                // Step 4 — persist the new mode and repo path
+                _prefs.Save(p => p with
+                {
+                    VaultMode    = "github",
+                    VaultRepoPath = vaultDir,
+                });
+            }
+            else
+            {
+                _prefs.Save(p => p with { VaultMode = "github" });
+            }
+
+            IsLocalMode     = false;
+            MigrationStatus = "Migration complete — sync is now active.";
+        }
+        catch (Exception ex)
+        {
+            MigrationStatus = $"Migration failed: {ex.Message}";
+        }
+        finally
+        {
+            IsMigrating = false;
+        }
+    }
 
     [RelayCommand]
     private void LockVault()
@@ -84,12 +281,12 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task SyncNowAsync()
     {
-        // TODO: call IGitSyncService.SyncAsync
         LastSyncedAt = DateTimeOffset.UtcNow;
-        await Task.CompletedTask;
+        if (_syncService is null) return;
+        var vaultPath = _prefs.Load().VaultRepoPath;
+        if (!string.IsNullOrWhiteSpace(vaultPath))
+            await _syncService.SyncAsync(vaultPath);
     }
-
-    // ── Trusted devices ───────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task RevokeDeviceAsync(string deviceId)
@@ -107,18 +304,18 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task LoadTrustedDevicesAsync()
     {
-        // TODO: expose device list from VaultService
-        await Task.CompletedTask;
+        var devices = await _vault.GetDevicesAsync();
+        TrustedDevices = devices
+            .Select(d => new DeviceInfo(d.DeviceId, d.DeviceName, d.AddedAt, d.DeviceId == _deviceId))
+            .ToArray();
     }
 }
 
 public record DeviceInfo(string DeviceId, string DeviceName, DateTimeOffset AddedAt, bool IsCurrentDevice);
 public record DeviceApprovalRequest(string DeviceId, string DeviceName);
 
-// ── AppThemeConverter — used in SettingsView XAML radio buttons ───────────
-
 /// <summary>
-/// Converts an AppTheme enum to bool for RadioButton.IsChecked bindings.
+/// Converts AppTheme to bool for RadioButton.IsChecked bindings in SettingsView.
 /// Usage: IsChecked="{Binding Theme, Converter={x:Static vm:AppThemeConverter.Dark}}"
 /// </summary>
 public sealed class AppThemeConverter : IValueConverter

@@ -67,8 +67,16 @@ public partial class MainWindow : Window
 
     private async void OnNewConnectionRequested()
     {
-        var dialog = new NewConnectionDialog();
-        await dialog.ShowDialog(this);
+        var dialog    = new NewConnectionDialog();
+        var confirmed = await dialog.ShowDialog<bool>(this);
+
+        if (!confirmed || dialog.ResultEntry is not { } entry) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        var groupName = (dialog.DataContext as SpotDesk.UI.ViewModels.NewConnectionDialogViewModel)?.Group
+                        ?? "Default";
+
+        vm.AddNewConnection(entry, groupName);
     }
 
     private async void OnSettingsRequested()
@@ -92,7 +100,21 @@ public partial class MainWindow : Window
     private async void OnGitHubSignInRequested()
     {
         var dialog = new OAuthConnectDialog();
-        await dialog.ShowDialog(this);
+        var result = await dialog.ShowDialog<object?>(this);
+
+        // Propagate the identity to SettingsViewModel so connected state reflects immediately
+        var settingsVm = AppServices.GetRequired<SettingsViewModel>();
+        switch (result)
+        {
+            case SpotDesk.Core.Auth.GitHubIdentity github:
+                settingsVm.IsGitHubConnected = true;
+                settingsVm.GithubLogin       = github.Login;
+                break;
+            case SpotDesk.Core.Auth.BitbucketIdentity bitbucket:
+                settingsVm.IsBitbucketConnected = true;
+                settingsVm.BitbucketDisplayName = bitbucket.Username;
+                break;
+        }
     }
 
     private void OnSearchOpenRequested()

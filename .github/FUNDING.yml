@@ -1,0 +1,19 @@
+# GitHub will display a "Sponsor" button on the repository page.
+# Uncomment and fill in whichever platforms you use.
+# Full list: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# GitHub Sponsors (your GitHub username):
+# github: your-github-username
+
+# Ko-fi:
+# ko_fi: your-ko-fi-username
+
+# Buy Me a Coffee:
+# buy_me_a_coffee: your-buymeacoffee-username
+
+# Open Collective:
+# open_collective: your-collective-name
+
+# Custom URLs (up to 4):
+# custom:
+#   - https://your-payment-link.example.com

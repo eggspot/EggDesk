@@ -25,6 +25,11 @@ public class RdpFileImporter
             }
 
             var fullAddress = props.GetValueOrDefault("full address") ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(fullAddress))
+            {
+                errors.Add("Missing required field: full address");
+                return new ImportResult { Errors = [.. errors] };
+            }
             var (host, port) = ParseAddress(fullAddress);
 
             var username = props.GetValueOrDefault("username") ?? string.Empty;

@@ -55,6 +55,9 @@ public partial class MainWindowViewModel : ObservableObject
         Search.ConnectionActivated += entry => OpenTab(entry);
         Search.CloseRequested      += () => IsSearchVisible = false;
 
+        // Quick Connect bar opens an ad-hoc tab directly
+        ConnectionTree.QuickConnectRequested += OpenTab;
+
         // Restore saved preferences
         var saved = _prefs.Load();
         _themeService.SetTheme(saved.Theme);
@@ -116,6 +119,16 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     // ── Tab management ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Called by the View after New Connection dialog saves.
+    /// Adds the entry to the sidebar tree, then opens a tab and starts connecting.
+    /// </summary>
+    public void AddNewConnection(ConnectionEntry entry, string groupName)
+    {
+        ConnectionTree.AddEntry(entry, groupName);
+        OpenTab(entry);
+    }
 
     public void OpenTab(ConnectionEntry connection)
     {

@@ -1,0 +1,205 @@
+name: SpotDesk CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Linux ──────────────────────────────────────────────────────────────────
+  test-linux:
+    name: Tests (Linux / .NET 10)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install native dependencies
+        run: sudo apt-get install -y libfreerdp3 libssh2-1 libsecret-1-0 libfontconfig1 libice6 libsm6
+
+      - name: Restore
+        run: dotnet restore SpotDesk.sln
+
+      - name: Build
+        run: dotnet build SpotDesk.sln --no-restore --configuration Debug
+
+      - name: Core unit tests — M1 (Vault + Crypto)
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=M1" \
+            --logger "trx;LogFileName=m1-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Core unit tests — M2 (Git Sync)
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=M2" \
+            --logger "trx;LogFileName=m2-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Core unit tests — M3 (Importers)
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=M3" \
+            --logger "trx;LogFileName=m3-results.trx" \
+            --results-directory ./TestResults
+
+      - name: UI/UX tests — M4 (ViewModel + Headless)
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=M4" \
+            --logger "trx;LogFileName=m4-results.trx" \
+            --results-directory ./TestResults
+        env:
+          DISPLAY: ':99'  # Headless X11 if needed
+
+      - name: Integration tests
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=Integration" \
+            --logger "trx;LogFileName=integration-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-linux
+          path: TestResults/
+
+  # ── Windows ───────────────────────────────────────────────────────────────
+  test-windows:
+    name: Tests (Windows / .NET 10)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore SpotDesk.sln
+
+      - name: Build
+        run: dotnet build SpotDesk.sln --no-restore --configuration Debug
+
+      - name: Core tests (M1 + M2 + M3)
+        run: |
+          dotnet test SpotDesk.sln `
+            --no-build `
+            --configuration Debug `
+            --filter "Category=M1|Category=M2|Category=M3|Category=M5" `
+            --logger "trx;LogFileName=core-results.trx" `
+            --results-directory ./TestResults
+
+      - name: UI tests (M4 + M6 Windows RDP)
+        run: |
+          dotnet test SpotDesk.sln `
+            --no-build `
+            --configuration Debug `
+            --filter "Category=M4|Category=M5|Category=M6" `
+            --logger "trx;LogFileName=ui-results.trx" `
+            --results-directory ./TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-windows
+          path: TestResults/
+
+  # ── macOS ─────────────────────────────────────────────────────────────────
+  test-macos:
+    name: Tests (macOS / .NET 10)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install FreeRDP
+        run: brew install freerdp
+
+      - name: Restore & Build
+        run: |
+          dotnet restore SpotDesk.sln
+          dotnet build SpotDesk.sln --no-restore --configuration Debug
+
+      - name: Core + UI tests
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --filter "Category=M1|Category=M2|Category=M3|Category=M4|Category=M5" \
+            --logger "trx;LogFileName=macos-results.trx" \
+            --results-directory ./TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-macos
+          path: TestResults/
+
+  # ── Coverage report ───────────────────────────────────────────────────────
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [test-linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install native dependencies
+        run: sudo apt-get install -y libfreerdp3 libssh2-1 libsecret-1-0
+
+      - name: Restore & Build
+        run: |
+          dotnet restore SpotDesk.sln
+          dotnet build SpotDesk.sln --no-restore --configuration Debug
+
+      - name: Collect coverage
+        run: |
+          dotnet test SpotDesk.sln \
+            --no-build \
+            --configuration Debug \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+
+      - name: Generate HTML report
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:"./TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"./TestResults/CoverageReport" \
+            -reporttypes:Html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: TestResults/CoverageReport/

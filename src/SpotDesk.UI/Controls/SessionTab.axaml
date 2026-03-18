@@ -10,9 +10,7 @@
           Cursor="Hand">
 
     <Border.BorderBrush>
-      <MultiBinding Converter="{StaticResource ActiveTabBorderConverter}">
-        <Binding Path="IsActive"/>
-      </MultiBinding>
+      <Binding Path="IsActive" Converter="{StaticResource ActiveTabBorderConverter}"/>
     </Border.BorderBrush>
 
     <Grid ColumnDefinitions="16,*,8,20">

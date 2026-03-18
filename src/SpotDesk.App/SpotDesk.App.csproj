@@ -9,8 +9,22 @@
     <RootNamespace>SpotDesk.App</RootNamespace>
     <AssemblyName>SpotDesk</AssemblyName>
     <!-- ApplicationIcon: add Assets\spotdesk.ico before release -->
-    <!-- Windows: NativeAOT; macOS/Linux: ReadyToRun (set via publish profile) -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Single-file delivery ─────────────────────────────────────────
+         dotnet publish -r win-x64 -c Release  → single SpotDesk.exe
+         dotnet publish -r osx-arm64 -c Release → single SpotDesk binary
+         dotnet publish -r linux-x64 -c Release → single SpotDesk binary
+         Native libs (LibGit2Sharp's libgit2, Avalonia platform) are
+         bundled inside the executable and extracted to a temp dir on
+         first launch (~5ms, transparent to the user).
+    -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>

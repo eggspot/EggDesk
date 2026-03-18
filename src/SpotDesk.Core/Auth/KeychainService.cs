@@ -156,7 +156,14 @@ public class LinuxKeychainService : IKeychainService
         return dbusResult ?? FallbackRetrieve(key);
     }
 
-    public void Delete(string key) { /* TODO: D-Bus + fallback delete */ }
+    public void Delete(string key)
+    {
+        // Remove from the encrypted file fallback.
+        // D-Bus libsecret delete is a future enhancement when libsecret support is added.
+        var store = LoadFallbackStore();
+        if (store.Remove(key))
+            SaveFallbackStore(store);
+    }
 
     // D-Bus libsecret support is a TODO. The encrypted file fallback is always used.
     private static bool TryDbusStore(string key, string value) => false;

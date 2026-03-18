@@ -10,5 +10,5 @@ public sealed class ExpandArrowConverter : IValueConverter
         value is true ? "▾" : "▸";
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
+        Avalonia.Data.BindingOperations.DoNothing;
 }

@@ -43,6 +43,32 @@ public partial class ConnectionTreeViewModel : ObservableObject
                 new ConnectionGroup { Name = "Favorites" }, favorites));
     }
 
+    /// <summary>
+    /// Adds a single new entry to the named group, creating the group if it doesn't exist.
+    /// Called immediately after the New Connection dialog saves.
+    /// </summary>
+    public void AddEntry(ConnectionEntry entry, string groupName)
+    {
+        var name = string.IsNullOrWhiteSpace(groupName) ? "Default" : groupName.Trim();
+
+        var groupVm = Groups.FirstOrDefault(g =>
+            string.Equals(g.Group.Name, name, StringComparison.OrdinalIgnoreCase));
+
+        if (groupVm is null)
+        {
+            var group = new ConnectionGroup { Name = name };
+            groupVm = new ConnectionGroupViewModel(group, []);
+            Groups.Add(groupVm);
+        }
+
+        entry.GroupId = groupVm.Group.Id;
+        groupVm.Entries.Add(entry);
+
+        // Rebuild search index to include the new entry
+        var all = Groups.SelectMany(g => g.Entries).ToList();
+        _index = all.ToFrozenDictionary(e => e.Id);
+    }
+
     private void ApplyFilter(string query)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -74,16 +100,33 @@ public partial class ConnectionTreeViewModel : ObservableObject
     [RelayCommand]
     private void ReconnectAll() => ReconnectAllRequested?.Invoke();
 
+    /// <summary>
+    /// Raised when the user presses Enter in the Quick Connect bar.
+    /// MainWindowViewModel handles this by calling OpenTab.
+    /// </summary>
+    public event Action<ConnectionEntry>? QuickConnectRequested;
+
     [RelayCommand]
     private void QuickConnect(string query)
     {
+        if (string.IsNullOrWhiteSpace(query)) return;
+
         // Auto-detect protocol by port pattern
         var protocol = query.EndsWith(":22") ? Protocol.Ssh
             : query.EndsWith(":5900") ? Protocol.Vnc
             : Protocol.Rdp;
 
         var (host, port) = ParseHostPort(query, ConnectionEntry.DefaultPortFor(protocol));
-        // TODO: open a tab for this ad-hoc connection
+
+        var entry = new ConnectionEntry
+        {
+            Name     = host,
+            Host     = host,
+            Port     = port,
+            Protocol = protocol,
+        };
+
+        QuickConnectRequested?.Invoke(entry);
     }
 
     private static (string Host, int Port) ParseHostPort(string input, int defaultPort)

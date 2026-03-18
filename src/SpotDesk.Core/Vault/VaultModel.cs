@@ -13,7 +13,14 @@ public record VaultFile
     [JsonPropertyName("kdf")]
     public string Kdf { get; init; } = "argon2id:3:65536:4";
 
-    /// <summary>Only present when vault is in master-password fallback mode.</summary>
+    /// <summary>
+    /// "github" (default) — master key derived from GitHub userId + deviceId.
+    /// "local"            — master key derived from a user password + salt (no Git sync required).
+    /// </summary>
+    [JsonPropertyName("mode")]
+    public string Mode { get; init; } = "github";
+
+    /// <summary>Only present when Mode == "local". Base64-encoded 32-byte random salt.</summary>
     [JsonPropertyName("salt")]
     public string? Salt { get; init; }
 

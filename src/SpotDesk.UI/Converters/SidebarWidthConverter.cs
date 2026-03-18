@@ -13,5 +13,5 @@ public sealed class SidebarWidthConverter : IValueConverter
         value is true ? 240.0 : 0.0;
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
+        Avalonia.Data.BindingOperations.DoNothing;
 }

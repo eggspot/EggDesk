@@ -31,14 +31,22 @@ dotnet test tests/SpotDesk.Core.Tests
 # Run a single test by name
 dotnet test tests/SpotDesk.Core.Tests --filter "FullyQualifiedName~VaultCrypto"
 
-# Publish — Windows (NativeAOT)
+# Publish — single-file executable (auto-detect platform)
+./scripts/publish.sh              # Linux/macOS
+.\scripts\publish.ps1             # Windows
+
+# Publish — explicit platform
 dotnet publish src/SpotDesk.App -r win-x64 -c Release
-
-# Publish — macOS (ReadyToRun)
 dotnet publish src/SpotDesk.App -r osx-arm64 -c Release
-
-# Publish — Linux AppImage
 dotnet publish src/SpotDesk.App -r linux-x64 -c Release
+
+# Test by milestone
+dotnet test SpotDesk.sln --filter "Category=M1"         # Vault/Crypto
+dotnet test SpotDesk.sln --filter "Category=M2"         # Git Sync
+dotnet test SpotDesk.sln --filter "Category=M5"         # Integration
+
+# Self-healing test loop (vibe coding)
+./scripts/test-loop.sh --milestone M5
 ```
 
 ---
@@ -52,9 +60,13 @@ SpotDesk.sln
 │   ├── SpotDesk.Protocols/   # RDP/SSH/VNC backends
 │   ├── SpotDesk.UI/          # AvaloniaUI views, controls, view-models
 │   └── SpotDesk.App/         # Entry point + DI bootstrap + platform init
-└── tests/
-    ├── SpotDesk.Core.Tests/
-    └── SpotDesk.Protocols.Tests/
+├── tests/
+│   ├── SpotDesk.Core.Tests/
+│   ├── SpotDesk.UI.Tests/
+│   └── SpotDesk.Protocols.Tests/
+└── scripts/
+    ├── publish.sh / publish.ps1    # Single-file build scripts
+    └── test-loop.sh / test-loop.ps1 # Self-healing test runner
 ```
 
 ---
@@ -155,6 +167,41 @@ Default: Dark. `ThemeService.SetTheme(AppTheme)` drives `RequestedThemeVariant`.
 | `LibGit2Sharp` | Git sync |
 | `RemoteViewing` | VNC |
 | `xunit`, `NSubstitute` | Tests |
+
+---
+
+## Single-File Delivery
+
+The app publishes as a **single executable** per platform. Key csproj properties in `SpotDesk.App`:
+
+- `PublishSingleFile` + `SelfContained` — no .NET runtime install needed
+- `PublishTrimmed` + `TrimMode=link` — removes unused managed code
+- `EnableCompressionInSingleFile` — compressed binary
+- `IncludeNativeLibrariesForSelfExtract` — LibGit2Sharp's native `libgit2` bundled inside, extracted to temp on first launch
+
+Git sync uses **LibGit2Sharp** (embedded), so no external `git` CLI required.
+
+---
+
+## Testing Strategy
+
+**200+ tests** organized by milestone. Run with `--filter "Category=M1"` etc.
+
+| Category | Scope | Key classes |
+|---|---|---|
+| M1 | Vault, crypto, OAuth, keychain | `VaultService`, `VaultCrypto`, `OAuthService` |
+| M2 | Git sync, conflict resolution | `GitSyncService`, `ConflictResolver` |
+| M3 | File importers | `RdpFileImporter`, `DevolutionsImporter` |
+| M4 | ViewModels, headless UI dialogs | `MainWindowViewModel`, `NewConnectionDialog` |
+| M5 | Integration: auth flows, session lifecycle, view selector | `SettingsViewModel`, `SessionTabViewModel`, `SessionViewSelector` |
+
+**Vibe coding loop**: `./scripts/test-loop.sh --milestone M5` — builds once, runs tests up to 5 times, stops on green.
+
+**Test helpers** (in `tests/SpotDesk.Core.Tests/TestHelpers/`):
+- `VaultFixture` — fresh in-memory vault per test
+- `FastKeyDerivationService` — fast Argon2id for tests (low iterations)
+- `InMemoryKeychainService` — no OS keychain needed
+- `MockHttpMessageHandler` — HTTP request stubbing
 
 ---
 

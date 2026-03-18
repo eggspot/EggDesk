@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>13</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Avalonia headless tests must run single-threaded to avoid UI thread races -->
+    <XunitRunnerExtraArgs>-parallel none</XunitRunnerExtraArgs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SpotDesk.UI\SpotDesk.UI.csproj" />
+    <ProjectReference Include="..\..\src\SpotDesk.Core\SpotDesk.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk"              Version="17.*" />
+    <PackageReference Include="xunit"                               Version="2.*" />
+    <PackageReference Include="xunit.runner.visualstudio"           Version="3.*">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="NSubstitute"                         Version="5.*" />
+    <PackageReference Include="Avalonia.Headless.XUnit"             Version="11.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent"              Version="11.*" />
+  </ItemGroup>
+
+</Project>

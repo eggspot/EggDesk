@@ -91,11 +91,64 @@ public class FreeRdpSession : IRdpSession
 
     public WriteableBitmap? GetFrameBuffer() => _framebuffer;
 
-    public void SendKeyDown(int scanCode, bool isExtended = false) { /* TODO: freerdp input */ }
-    public void SendKeyUp(int scanCode, bool isExtended = false) { /* TODO: freerdp input */ }
-    public void SendMouseMove(int x, int y) { /* TODO: freerdp input */ }
-    public void SendMouseButton(MouseButton button, bool isDown) { /* TODO: freerdp input */ }
-    public void SendCtrlAltDel() { /* TODO: send VK_MENU + VK_CONTROL + VK_DELETE */ }
+    private IntPtr GetInput() =>
+        _instance != IntPtr.Zero ? FreeRdpNative.freerdp_input_get(_instance) : IntPtr.Zero;
+
+    public void SendKeyDown(int scanCode, bool isExtended = false)
+    {
+        var input = GetInput();
+        if (input == IntPtr.Zero) return;
+        ushort flags = FreeRdpNative.KBD_FLAGS_DOWN;
+        if (isExtended) flags |= FreeRdpNative.KBD_FLAGS_EXTENDED;
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, flags, (ushort)scanCode);
+    }
+
+    public void SendKeyUp(int scanCode, bool isExtended = false)
+    {
+        var input = GetInput();
+        if (input == IntPtr.Zero) return;
+        ushort flags = FreeRdpNative.KBD_FLAGS_UP;
+        if (isExtended) flags |= FreeRdpNative.KBD_FLAGS_EXTENDED;
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, flags, (ushort)scanCode);
+    }
+
+    public void SendMouseMove(int x, int y)
+    {
+        var input = GetInput();
+        if (input == IntPtr.Zero) return;
+        FreeRdpNative.freerdp_input_send_mouse_event(
+            input, FreeRdpNative.PTR_FLAGS_MOVE, (ushort)x, (ushort)y);
+    }
+
+    public void SendMouseButton(MouseButton button, bool isDown)
+    {
+        var input = GetInput();
+        if (input == IntPtr.Zero) return;
+        ushort btnFlag = button switch
+        {
+            MouseButton.Left   => FreeRdpNative.PTR_FLAGS_BUTTON1,
+            MouseButton.Right  => FreeRdpNative.PTR_FLAGS_BUTTON2,
+            MouseButton.Middle => FreeRdpNative.PTR_FLAGS_BUTTON3,
+            _                  => 0,
+        };
+        if (btnFlag == 0) return;
+        ushort flags = btnFlag;
+        if (isDown) flags |= FreeRdpNative.PTR_FLAGS_DOWN;
+        FreeRdpNative.freerdp_input_send_mouse_event(input, flags, 0, 0);
+    }
+
+    public void SendCtrlAltDel()
+    {
+        var input = GetInput();
+        if (input == IntPtr.Zero) return;
+        // Press Ctrl + Alt + Delete, then release in reverse order
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_DOWN, FreeRdpNative.SCANCODE_CTRL);
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_DOWN | FreeRdpNative.KBD_FLAGS_EXTENDED, FreeRdpNative.SCANCODE_ALT);
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_DOWN | FreeRdpNative.KBD_FLAGS_EXTENDED, FreeRdpNative.SCANCODE_DELETE);
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_UP   | FreeRdpNative.KBD_FLAGS_EXTENDED, FreeRdpNative.SCANCODE_DELETE);
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_UP   | FreeRdpNative.KBD_FLAGS_EXTENDED, FreeRdpNative.SCANCODE_ALT);
+        FreeRdpNative.freerdp_input_send_keyboard_event(input, FreeRdpNative.KBD_FLAGS_UP,                                      FreeRdpNative.SCANCODE_CTRL);
+    }
 
     public void Resize(int width, int height)
     {

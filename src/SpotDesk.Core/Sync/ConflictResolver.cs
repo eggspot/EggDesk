@@ -23,8 +23,8 @@ public static class ConflictResolver
             .ToArray();
 
         // Entries: decrypt both, keep newest by updatedAt
-        var ourDecrypted = DecryptAll(ours.Entries, masterKey);
-        var theirDecrypted = DecryptAll(theirs.Entries, masterKey);
+        var ourDecrypted = DecryptAll(ours.Entries, masterKey, "ours");
+        var theirDecrypted = DecryptAll(theirs.Entries, masterKey, "theirs");
 
         var merged = ourDecrypted
             .Concat(theirDecrypted)
@@ -42,7 +42,7 @@ public static class ConflictResolver
         return ours with { Devices = mergedDevices, Entries = winnerEntries };
     }
 
-    private static List<DecryptedMeta> DecryptAll(VaultEntry[] entries, byte[] masterKey)
+    private static List<DecryptedMeta> DecryptAll(VaultEntry[] entries, byte[] masterKey, string source)
     {
         var results = new List<DecryptedMeta>();
         foreach (var entry in entries)
@@ -57,7 +57,7 @@ public static class ConflictResolver
                 var updatedAt = doc.RootElement.TryGetProperty("updatedAt", out var el)
                     ? el.GetDateTimeOffset()
                     : DateTimeOffset.MinValue;
-                results.Add(new(entry.Id, updatedAt, ""));
+                results.Add(new(entry.Id, updatedAt, source));
             }
             catch
             {

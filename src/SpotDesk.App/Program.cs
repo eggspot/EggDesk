@@ -32,8 +32,12 @@ class Program
         services.AddSingleton<IKeyDerivationService, KeyDerivationService>();
         services.AddSingleton<IKeychainService>(_ => KeychainServiceFactory.Create());
 
-        // Auth
-        services.AddSingleton<IOAuthService, OAuthService>();
+        // Auth — env var overrides take precedence over the bundled client ID
+        // (useful for developers testing against their own OAuth App)
+        services.AddSingleton<OAuthClientConfig>(_ => OAuthClientConfig.Resolve(null, null, null));
+        services.AddSingleton<IOAuthService>(sp => new OAuthService(
+            sp.GetRequiredService<IKeychainService>(),
+            sp.GetRequiredService<OAuthClientConfig>()));
 
         // Vault & session lock
         services.AddSingleton<ISessionLockService, SessionLockService>();

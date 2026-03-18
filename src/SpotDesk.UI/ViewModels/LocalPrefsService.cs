@@ -66,6 +66,10 @@ public record LocalPrefs
     [JsonPropertyName("vaultRepoPath")]
     public string? VaultRepoPath { get; init; }
 
+    /// <summary>"github" (default, requires sign-in + Git repo) or "local" (password-only, no sync).</summary>
+    [JsonPropertyName("vaultMode")]
+    public string VaultMode { get; init; } = "github";
+
     [JsonPropertyName("tabOrder")]
     public List<Guid> TabOrder { get; init; } = [];
 }
