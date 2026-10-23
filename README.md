@@ -177,7 +177,7 @@ All contributions are welcome -- bug fixes, features, documentation, translation
 3. Run `dotnet test SpotDesk.sln` -- all tests must pass
 4. Open a pull request
 
-Code you contribute is licensed MIT.
+Code you contribute is licensed MIT OR Apache-2.0.
 
 ---
 
@@ -196,7 +196,7 @@ If you find a security issue, please open a **private** GitHub Security Advisory
 
 ## Sponsoring
 
-EggDesk is free and open source (MIT). If it saves you time, consider sponsoring development:
+EggDesk is free and open source (MIT OR Apache-2.0). If it saves you time, consider sponsoring development:
 
 - Click the **Sponsor** button at the top of this page (GitHub Sponsors)
 
@@ -206,4 +206,4 @@ Your support funds ongoing development, new platform support, and security audit
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
